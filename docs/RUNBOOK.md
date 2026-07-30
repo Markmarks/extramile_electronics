@@ -40,6 +40,29 @@ Operational playbook for ExtraMile Electronics. P0 = payment/auth incidents.
   `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` and back the limiter with a shared
   Upstash counter (INCR + PEXPIRE). Endpoints limited: `/api/checkout/*`, auth, search, webhook.
 
+## Desktop: bad release rollback (D-08)
+- Keep the previous two installers on the GitHub Release. Point the updater manifest
+  (`latest.json`) back at the pinned previous version; the minisign signature must match or
+  clients reject the update. Staff on the bad build reinstall the previous signed MSI.
+- The release job (`.github/workflows/desktop-release.yml`) publishes a **draft** release —
+  smoke-test the installer on a clean Windows 11 VM (SmartScreen, first-run OAuth, printer
+  discovery) before publishing.
+
+## Desktop: revoke a device (D-15)
+- Call `admin-actions` `device_revoke` (sets `staff_devices.is_revoked`). On the device's next
+  token refresh it is signed out. Use when a counter PC is lost or decommissioned.
+
+## Desktop: printer down (D-09)
+- Print failures surface as a typed toast and **never change order state**; reprint from the
+  order detail once the printer is back. Check the printer selection in Settings; run
+  `print_test`. Receipts are ESC/POS spooled — verify the spool file if raw output looks wrong.
+
+## Desktop: extended outage with a full outbox
+- Writes queue locally (`outbox`) and replay in order per order id on reconnect; the server
+  dedupes on `outbox_receipts.idempotency_key`, so replay after a mid-flush crash is safe.
+- Monitor `outbox_pending()` growth; a stuck item shows an `error` and blocks later items for
+  the same order (surfaced as a conflict for staff to resolve).
+
 ## Deferred to wire before launch
 - Sentry (client/server/edge) with PII scrubbing + alert rules (payment-failure spike,
   paid > 5 min unconfirmed, 5xx, webhook signature failures).
