@@ -44,7 +44,7 @@ function newCartToken(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function currentUserId(): Promise<string | null> {
+export async function currentUserId(): Promise<string | null> {
   const supabase = await createServerAuthClient();
   const {
     data: { user },
@@ -201,6 +201,12 @@ export async function clearCart(): Promise<void> {
   const cartId = await resolveCartId(admin, false);
   if (!cartId) return;
   await admin.from('cart_items').delete().eq('cart_id', cartId);
+}
+
+/** Current cart id without creating one — used by checkout/quote (read-only). */
+export async function getCurrentCartId(): Promise<string | null> {
+  const admin = createAdminClient();
+  return resolveCartId(admin, false);
 }
 
 export async function getCartCount(): Promise<number> {

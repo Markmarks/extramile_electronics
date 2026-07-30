@@ -70,7 +70,7 @@ create table payments (
   amount bigint not null,
   currency char(3) not null default 'GHS',
   status text not null default 'initialized',
-  authorization jsonb,
+  "authorization" jsonb, -- quoted: reserved SQL keyword
   raw jsonb,
   paid_at timestamptz,
   created_at timestamptz not null default now()
