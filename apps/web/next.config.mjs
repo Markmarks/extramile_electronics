@@ -5,6 +5,7 @@ const nextConfig = {
   transpilePackages: ['@extramile/core', '@extramile/ui'],
   images: {
     formats: ['image/avif', 'image/webp'],
+    remotePatterns: [{ protocol: 'https', hostname: '**.supabase.co' }],
   },
   // Linting runs as its own CI step against the repo-root flat config.
   eslint: { ignoreDuringBuilds: true },

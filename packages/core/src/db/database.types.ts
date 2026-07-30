@@ -721,6 +721,21 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      search_products: {
+        Args: {
+          q?: string;
+          p_category?: string;
+          p_brand?: string;
+          p_condition?: Database['public']['Enums']['product_cond'];
+          p_in_stock?: boolean;
+          p_min_price?: number;
+          p_max_price?: number;
+          p_sort?: string;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: Database['public']['Tables']['products']['Row'][];
+      };
     };
     Enums: {
       user_role: 'customer' | 'staff' | 'admin';
