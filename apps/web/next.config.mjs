@@ -1,4 +1,20 @@
 // CSP allowing Supabase, Paystack, and Google/Apple auth origins (docs/05 §9, N-09).
+// Next's dev bundler needs 'unsafe-eval' + localhost websockets; those are dev-only.
+const isDev = process.env.NODE_ENV !== 'production';
+
+const scriptSrc = ["'self'", "'unsafe-inline'", 'https://js.paystack.co'];
+if (isDev) scriptSrc.push("'unsafe-eval'");
+
+const connectSrc = [
+  "'self'",
+  'https://*.supabase.co',
+  'wss://*.supabase.co',
+  'https://api.paystack.co',
+  'https://accounts.google.com',
+  'https://appleid.apple.com',
+];
+if (isDev) connectSrc.push('ws://localhost:*', 'http://localhost:*');
+
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -8,8 +24,8 @@ const csp = [
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline' https://js.paystack.co",
-  "connect-src 'self' https://*.supabase.co https://api.paystack.co https://accounts.google.com https://appleid.apple.com",
+  `script-src ${scriptSrc.join(' ')}`,
+  `connect-src ${connectSrc.join(' ')}`,
   'frame-src https://checkout.paystack.com https://js.paystack.co',
 ].join('; ');
 
