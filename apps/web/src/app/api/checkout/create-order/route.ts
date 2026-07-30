@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { currentUserId, getCurrentCartId } from '@/lib/cart/cart';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { orderConfirmation } from '@/lib/email/templates';
+import { notifyOnce } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +67,30 @@ export async function POST(req: NextRequest) {
   }
 
   const order = data as unknown as Tables<'orders'>;
+
+  // Best-effort order-confirmation email (exactly once; never blocks the response).
+  try {
+    const { data: items } = await admin
+      .from('order_items')
+      .select('title, qty, line_total')
+      .eq('order_id', order.id)
+      .returns<{ title: string; qty: number; line_total: number }[]>();
+    const tmpl = orderConfirmation({
+      orderNumber: order.order_number,
+      total: order.total,
+      items: (items ?? []).map((i) => ({ title: i.title, qty: i.qty, lineTotal: i.line_total })),
+    });
+    await notifyOnce({
+      orderId: order.id,
+      event: 'order_confirmation',
+      to: order.email,
+      subject: tmpl.subject,
+      html: tmpl.html,
+    });
+  } catch {
+    // ignore — order is created; the email can be retried later
+  }
+
   return NextResponse.json({
     orderNumber: order.order_number,
     orderId: order.id,

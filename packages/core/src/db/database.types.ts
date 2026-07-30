@@ -694,6 +694,24 @@ export interface Database {
         Update: { result?: Json | null };
         Relationships: [];
       };
+      notifications: {
+        Row: { id: number; order_id: string; event: string; channel: string; sent_at: string };
+        Insert: {
+          id?: number;
+          order_id: string;
+          event: string;
+          channel?: string;
+          sent_at?: string;
+        };
+        Update: { sent_at?: string };
+        Relationships: [];
+      };
+      email_suppressions: {
+        Row: { email: string; reason: string | null; created_at: string };
+        Insert: { email: string; reason?: string | null; created_at?: string };
+        Update: { reason?: string | null };
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
