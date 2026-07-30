@@ -77,3 +77,7 @@ verify_jwt = false
 # Reconciler is invoked by pg_cron (service role); it does its own auth checks.
 [functions.reconcile-payments]
 verify_jwt = false
+
+# admin-actions requires a signed-in caller; the function re-checks staff role.
+[functions.admin-actions]
+verify_jwt = true
