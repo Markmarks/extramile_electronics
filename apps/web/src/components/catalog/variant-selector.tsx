@@ -4,7 +4,8 @@ import { formatGHS } from '@extramile/core';
 import { Button } from '@extramile/ui';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
+import { addToCartAction } from '@/lib/cart/actions';
 import type { ProductDetail, VariantDetail } from '@/lib/catalog/queries';
 
 function variantLabel(v: VariantDetail): string {
@@ -23,7 +24,9 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
   const initial = product.variants.find((v) => v.sku === initialSku) ?? product.variants[0];
   const [selectedId, setSelectedId] = useState(initial?.id);
   const [activeImage, setActiveImage] = useState(0);
-  const [added, setAdded] = useState(false);
+  const [qty, setQty] = useState(1);
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, startAdd] = useTransition();
 
   const selected = product.variants.find((v) => v.id === selectedId) ?? initial;
 
@@ -44,7 +47,8 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
   function select(v: VariantDetail) {
     setSelectedId(v.id);
     setActiveImage(0);
-    setAdded(false);
+    setQty(1);
+    setMessage(null);
     const next = new URLSearchParams(params.toString());
     next.set('variant', v.sku);
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
@@ -53,8 +57,23 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
   if (!selected) {
     return <p className="text-muted-foreground">This product has no available variants.</p>;
   }
+  const chosen = selected;
 
-  const onSale = selected.compareAtPrice != null && selected.compareAtPrice > selected.price;
+  function add() {
+    setMessage(null);
+    startAdd(async () => {
+      const res = await addToCartAction(chosen.id, qty);
+      if (!res.ok) {
+        setMessage(res.error);
+        return;
+      }
+      window.dispatchEvent(new Event('cart:changed'));
+      setMessage(res.clamped ? `Added — only ${res.qty} available.` : 'Added to cart.');
+      router.refresh();
+    });
+  }
+
+  const onSale = chosen.compareAtPrice != null && chosen.compareAtPrice > chosen.price;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -98,10 +117,10 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
       {/* Selection */}
       <div className="space-y-5">
         <div className="flex items-baseline gap-3">
-          <span className="text-2xl font-semibold">{formatGHS(selected.price)}</span>
-          {onSale && selected.compareAtPrice != null && (
+          <span className="text-2xl font-semibold">{formatGHS(chosen.price)}</span>
+          {onSale && chosen.compareAtPrice != null && (
             <span className="text-muted-foreground line-through">
-              {formatGHS(selected.compareAtPrice)}
+              {formatGHS(chosen.compareAtPrice)}
             </span>
           )}
         </div>
@@ -116,9 +135,7 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
                   type="button"
                   onClick={() => select(v)}
                   className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                    v.id === selected.id
-                      ? 'border-primary bg-primary/10'
-                      : 'hover:border-primary/50'
+                    v.id === chosen.id ? 'border-primary bg-primary/10' : 'hover:border-primary/50'
                   } ${v.available <= 0 ? 'opacity-50' : ''}`}
                 >
                   {variantLabel(v)}
@@ -129,34 +146,45 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
         )}
 
         <p className="text-sm">
-          {selected.available > 0 ? (
+          {chosen.available > 0 ? (
             <span className="text-success">
-              In stock{selected.available < 5 ? ` — only ${selected.available} left` : ''}
+              In stock{chosen.available < 5 ? ` — only ${chosen.available} left` : ''}
             </span>
           ) : (
             <span className="text-destructive">Out of stock</span>
           )}
         </p>
 
-        <div className="space-y-2">
-          <Button
-            type="button"
-            size="lg"
-            className="w-full sm:w-auto"
-            disabled={selected.available <= 0}
-            onClick={() => setAdded(true)}
-          >
-            Add to cart
+        <div className="flex items-center gap-3">
+          <div className="inline-flex items-center rounded-md border">
+            <button
+              type="button"
+              className="px-3 py-2 disabled:opacity-40"
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              disabled={pending || qty <= 1}
+              aria-label="Decrease quantity"
+            >
+              −
+            </button>
+            <span className="w-8 text-center text-sm">{qty}</span>
+            <button
+              type="button"
+              className="px-3 py-2 disabled:opacity-40"
+              onClick={() => setQty((q) => Math.min(chosen.available, q + 1))}
+              disabled={pending || qty >= chosen.available}
+              aria-label="Increase quantity"
+            >
+              +
+            </button>
+          </div>
+          <Button type="button" size="lg" disabled={chosen.available <= 0 || pending} onClick={add}>
+            {pending ? 'Adding…' : 'Add to cart'}
           </Button>
-          {added && (
-            <p className="text-sm text-muted-foreground">
-              Cart is wired up in the next build step (P5).
-            </p>
-          )}
         </div>
+        {message && <p className="text-sm text-muted-foreground">{message}</p>}
 
         <p className="text-xs text-muted-foreground">
-          SKU {selected.sku}
+          SKU {chosen.sku}
           {product.warrantyMonths > 0 && ` · ${product.warrantyMonths}-month warranty`}
           {product.warrantyProvider ? ` (${product.warrantyProvider})` : ''}
         </p>

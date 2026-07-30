@@ -2,6 +2,7 @@ import '@extramile/ui/tokens.css';
 import './globals.css';
 
 import type { Metadata, Viewport } from 'next';
+import { SiteHeader } from '@/components/site-header';
 
 export const metadata: Metadata = {
   title: {
@@ -23,7 +24,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-dvh">{children}</body>
+      <body className="flex min-h-dvh flex-col">
+        <SiteHeader />
+        <div className="flex-1">{children}</div>
+      </body>
     </html>
   );
 }
