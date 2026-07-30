@@ -4,7 +4,10 @@
 use keyring::{Entry, Error as KeyringError};
 use std::io::{Read, Write};
 use std::net::TcpListener;
+use tauri::Manager;
 use uuid::Uuid;
+
+mod offline;
 
 const SERVICE: &str = "com.extramile.admin";
 
@@ -96,13 +99,23 @@ async fn oauth_listen() -> Result<String, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            let db = offline::init(app.handle())?;
+            app.manage(db);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             secure_set,
             secure_get,
             secure_clear,
             device_id,
             open_external,
-            oauth_listen
+            oauth_listen,
+            offline::cache_put,
+            offline::cache_query,
+            offline::outbox_enqueue,
+            offline::outbox_pending,
+            offline::outbox_mark
         ])
         .run(tauri::generate_context!())
         .expect("error while running the ExtraMile back-office");
