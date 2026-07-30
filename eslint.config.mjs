@@ -20,6 +20,7 @@ export default tseslint.config(
       'docs/**',
       'files/**',
       'files1/**',
+      'load/**', // k6 scripts (k6 runtime globals)
     ],
   },
   js.configs.recommended,
