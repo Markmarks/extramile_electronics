@@ -2,7 +2,7 @@ import { useAuth } from './auth/AuthProvider';
 import { Login } from './auth/Login';
 import { LockOverlay } from './auth/LockOverlay';
 import { useIdleLock } from './hooks/useIdleLock';
-import { Dashboard } from './screens/Dashboard';
+import { Shell } from './screens/Shell';
 
 const IDLE_MS = 15 * 60 * 1000;
 
@@ -22,7 +22,7 @@ export function App() {
   return (
     <>
       {locked && <LockOverlay />}
-      <Dashboard />
+      <Shell />
     </>
   );
 }
