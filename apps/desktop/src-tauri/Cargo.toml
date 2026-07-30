@@ -1,0 +1,28 @@
+[package]
+name = "extramile-admin"
+version = "0.0.0"
+description = "ExtraMile Electronics back-office"
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "extramile_admin_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Windows Credential Manager backend (docs/07 §5). Adjust the feature per target OS.
+keyring = { version = "3", features = ["windows-native"] }
+uuid = { version = "1", features = ["v4"] }
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+strip = true

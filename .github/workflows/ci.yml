@@ -52,6 +52,9 @@ jobs:
       - name: Scan client bundle for leaked secrets (S-11)
         run: node scripts/scan-bundle-secrets.mjs apps/web/.next
 
+      - name: Scan desktop webview bundle for leaked secrets (D-01)
+        run: node scripts/scan-bundle-secrets.mjs apps/desktop/dist
+
   # ── Database: schema reproduces from scratch + lint + RLS suite (SDLC §3 5-6) ─
   # Enabled from phase P2 once supabase/migrations exist.
   database:
