@@ -69,3 +69,11 @@ secret = "env(SUPABASE_AUTH_APPLE_SECRET)"
 
 [edge_runtime]
 enabled = true
+
+# Paystack calls the webhook with no JWT — auth is the HMAC signature instead.
+[functions.paystack-webhook]
+verify_jwt = false
+
+# Reconciler is invoked by pg_cron (service role); it does its own auth checks.
+[functions.reconcile-payments]
+verify_jwt = false

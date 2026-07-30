@@ -126,13 +126,29 @@ export function CheckoutForm({
           },
         }),
       });
-      const data: { orderNumber?: string; error?: string } = await res.json();
-      if (!res.ok || !data.orderNumber) {
+      const data: { orderNumber?: string; orderId?: string; error?: string } = await res.json();
+      if (!res.ok || !data.orderNumber || !data.orderId) {
         setError(data.error ?? 'Could not place your order.');
         setPlacing(false);
         return;
       }
       window.dispatchEvent(new Event('cart:changed'));
+
+      // Initialize Paystack and redirect to the hosted checkout.
+      try {
+        const payRes = await fetch('/api/checkout/pay', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ orderId: data.orderId }),
+        });
+        const pay: { authorizationUrl?: string } = await payRes.json();
+        if (pay.authorizationUrl) {
+          window.location.href = pay.authorizationUrl;
+          return;
+        }
+      } catch {
+        // fall through to the processing page, which keeps polling
+      }
       router.push(`/checkout/${data.orderNumber}/processing`);
     } catch {
       setError('Network error. Please try again.');
