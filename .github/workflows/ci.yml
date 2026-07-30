@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Dummy public envs so `next build` can prerender without real secrets.
+  NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+  NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+jobs:
+  # ── Static checks + unit/integration + build (SDLC §3 steps 1-4, 8) ───────────
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit + integration tests (coverage gates)
+        run: pnpm -r test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Scan client bundle for leaked secrets (S-11)
+        run: node scripts/scan-bundle-secrets.mjs apps/web/.next
+
+  # ── Database: schema reproduces from scratch + lint + RLS suite (SDLC §3 5-6) ─
+  # Enabled from phase P2 once supabase/migrations exist.
+  database:
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('supabase/migrations/*.sql') != '' }}
+    env:
+      RUN_RLS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start local Supabase
+        run: supabase start
+      - name: Reset (reproduce schema + seed from scratch)
+        run: supabase db reset
+      - name: Lint schema
+        run: supabase db lint
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: RLS suite (S-01..S-12)
+        run: pnpm --filter @extramile/web test:rls
+
+  # ── E2E against a preview deploy (SDLC §3 step 7) ─────────────────────────────
+  # Enabled from phase P3+. Requires a preview URL secret.
+  e2e:
+    runs-on: ubuntu-latest
+    if: ${{ false }} # TODO: enable once Playwright specs + preview URL are wired (P3)
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "playwright test against preview"

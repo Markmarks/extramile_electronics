@@ -1,0 +1,12 @@
+node_modules
+dist
+.next
+out
+coverage
+pnpm-lock.yaml
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen
+**/*.md
+docs
+files
+files1
