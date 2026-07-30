@@ -8,6 +8,7 @@ use tauri::Manager;
 use uuid::Uuid;
 
 mod offline;
+mod printing;
 
 const SERVICE: &str = "com.extramile.admin";
 
@@ -115,7 +116,11 @@ pub fn run() {
             offline::cache_query,
             offline::outbox_enqueue,
             offline::outbox_pending,
-            offline::outbox_mark
+            offline::outbox_mark,
+            printing::list_printers,
+            printing::print_receipt,
+            printing::print_label,
+            printing::print_test
         ])
         .run(tauri::generate_context!())
         .expect("error while running the ExtraMile back-office");
