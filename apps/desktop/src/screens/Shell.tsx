@@ -4,10 +4,11 @@ import { OfflineBanner } from '../components/OfflineBanner';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { Catalogue } from './Catalogue';
 import { Dashboard } from './Dashboard';
+import { Inventory } from './Inventory';
 import { Orders } from './Orders';
 import { Users } from './Users';
 
-type View = 'home' | 'orders' | 'catalogue' | 'users';
+type View = 'home' | 'orders' | 'catalogue' | 'inventory' | 'users';
 
 export function Shell() {
   const { user, role, lock } = useAuth();
@@ -18,6 +19,7 @@ export function Shell() {
     { id: 'home', label: 'Home' },
     { id: 'orders', label: 'Orders' },
     { id: 'catalogue', label: 'Catalogue' },
+    { id: 'inventory', label: 'Inventory' },
     ...(role === 'admin' ? [{ id: 'users' as const, label: 'Users' }] : []),
   ];
 
@@ -52,6 +54,7 @@ export function Shell() {
       {view === 'home' && <Dashboard />}
       {view === 'orders' && <Orders />}
       {view === 'catalogue' && <Catalogue />}
+      {view === 'inventory' && <Inventory />}
       {view === 'users' && role === 'admin' && <Users />}
     </div>
   );
