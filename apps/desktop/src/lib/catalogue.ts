@@ -25,6 +25,12 @@ export interface VariantRow {
   is_active: boolean;
 }
 
+export interface ProductImage {
+  id: string;
+  storage_path: string;
+  sort_order: number;
+}
+
 export interface ProductRow {
   id: string;
   title: string;
@@ -32,7 +38,11 @@ export interface ProductRow {
   category: string | null;
   brand: string | null;
   variants: VariantRow[];
+  images: ProductImage[];
 }
+
+const IMAGE_BUCKET = 'product-images';
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // matches the bucket's 2MiB limit
 
 /** URL-safe slug with a short suffix so the unique constraint rarely collides. */
 function slugify(name: string): string {
@@ -81,13 +91,14 @@ interface ProductJoin {
   categories: { name: string } | null;
   brands: { name: string } | null;
   product_variants: VariantRow[];
+  product_images: ProductImage[];
 }
 
 export async function listProducts(): Promise<ProductRow[]> {
   const { data } = await supabase
     .from('products')
     .select(
-      'id, title, is_active, categories(name), brands(name), product_variants(id, sku, price, stock, is_active)',
+      'id, title, is_active, categories(name), brands(name), product_variants(id, sku, price, stock, is_active), product_images(id, storage_path, sort_order)',
     )
     .order('created_at', { ascending: false })
     .limit(200)
@@ -99,7 +110,38 @@ export async function listProducts(): Promise<ProductRow[]> {
     category: p.categories?.name ?? null,
     brand: p.brands?.name ?? null,
     variants: p.product_variants ?? [],
+    images: (p.product_images ?? []).sort((a, b) => a.sort_order - b.sort_order),
   }));
+}
+
+/** Public URL for a stored image path (the bucket is public). */
+export function imageUrl(storagePath: string): string {
+  return supabase.storage.from(IMAGE_BUCKET).getPublicUrl(storagePath).data.publicUrl;
+}
+
+/** Upload an image to the product-images bucket and link it to the product. */
+export async function uploadProductImage(productId: string, file: File): Promise<void> {
+  if (file.size > MAX_IMAGE_BYTES) throw new Error('Image exceeds the 2 MB limit.');
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const path = `products/${productId}/${globalThis.crypto.randomUUID()}.${ext}`;
+  const { error: upErr } = await supabase.storage
+    .from(IMAGE_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined, upsert: false });
+  if (upErr) throw new Error(upErr.message);
+  const { error } = await supabase
+    .from('product_images')
+    .insert({ product_id: productId, storage_path: path });
+  if (error) {
+    // Roll the orphaned object back so storage and the table stay in sync.
+    await supabase.storage.from(IMAGE_BUCKET).remove([path]);
+    throw new Error(error.message);
+  }
+}
+
+export async function deleteProductImage(id: string, storagePath: string): Promise<void> {
+  const { error } = await supabase.from('product_images').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  await supabase.storage.from(IMAGE_BUCKET).remove([storagePath]);
 }
 
 export interface NewProduct {

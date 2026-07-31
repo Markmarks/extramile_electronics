@@ -6,11 +6,14 @@ import {
   createCategory,
   createProduct,
   createVariant,
+  deleteProductImage,
+  imageUrl,
   listBrands,
   listCategories,
   listProducts,
   setProductActive,
   updateVariant,
+  uploadProductImage,
   type Brand,
   type Category,
   type Condition,
@@ -84,6 +87,8 @@ export function Catalogue() {
             onToggleVariant={(id, active) =>
               report(() => updateVariant(id, { is_active: active }))()
             }
+            onUploadImage={(file) => report(() => uploadProductImage(p.id, file))()}
+            onDeleteImage={(id, path) => report(() => deleteProductImage(id, path))()}
           />
         ))}
       </section>
@@ -322,12 +327,16 @@ function ProductCard({
   onAddVariant,
   onSaveVariant,
   onToggleVariant,
+  onUploadImage,
+  onDeleteImage,
 }: {
   product: ProductRow;
   onToggleActive: () => void;
   onAddVariant: (sku: string, priceCedis: number, stock: number) => void;
   onSaveVariant: (id: string, priceCedis: number, stock: number) => void;
   onToggleVariant: (id: string, active: boolean) => void;
+  onUploadImage: (file: File) => void;
+  onDeleteImage: (id: string, storagePath: string) => void;
 }) {
   const [sku, setSku] = useState('');
   const [price, setPrice] = useState('');
@@ -347,6 +356,56 @@ function ProductCard({
         <button className="btn secondary" onClick={onToggleActive}>
           {product.is_active ? 'Published' : 'Draft'}
         </button>
+      </div>
+
+      <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginTop: '.5rem' }}>
+        {product.images.map((img) => (
+          <div key={img.id} style={{ position: 'relative' }}>
+            <img
+              src={imageUrl(img.storage_path)}
+              alt=""
+              style={{
+                width: '3.5rem',
+                height: '3.5rem',
+                objectFit: 'cover',
+                borderRadius: '.35rem',
+                border: '1px solid hsl(var(--border))',
+              }}
+            />
+            <button
+              className="btn secondary"
+              title="Remove image"
+              onClick={() => onDeleteImage(img.id, img.storage_path)}
+              style={{
+                position: 'absolute',
+                top: '-.4rem',
+                right: '-.4rem',
+                padding: '0 .35rem',
+                lineHeight: 1.4,
+                borderRadius: '999px',
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <label
+          className="btn secondary"
+          style={{ display: 'grid', placeItems: 'center', width: '3.5rem', height: '3.5rem' }}
+          title="Add image (max 2 MB)"
+        >
+          +
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/avif"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onUploadImage(file);
+              e.target.value = '';
+            }}
+          />
+        </label>
       </div>
 
       <ul style={{ listStyle: 'none', padding: 0, margin: '.5rem 0 0' }}>
