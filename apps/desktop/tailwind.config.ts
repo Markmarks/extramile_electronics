@@ -1,10 +1,21 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Config } from 'tailwindcss';
 import tailwindcssAnimate from 'tailwindcss-animate';
+
+// Anchor content globs to this file's directory (forward slashes for fast-glob),
+// so class scanning works regardless of the process CWD the dev server is launched with.
+const here = path.dirname(fileURLToPath(import.meta.url));
+const glob = (p: string) => path.resolve(here, p).replace(/\\/g, '/');
 
 // Same token mapping as apps/web so both surfaces read as one product.
 const config: Config = {
   darkMode: 'class',
-  content: ['./index.html', './src/**/*.{ts,tsx}', '../../packages/ui/src/**/*.{ts,tsx}'],
+  content: [
+    glob('index.html'),
+    glob('src/**/*.{ts,tsx}'),
+    glob('../../packages/ui/src/**/*.{ts,tsx}'),
+  ],
   theme: {
     extend: {
       colors: {
