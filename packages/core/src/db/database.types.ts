@@ -757,7 +757,7 @@ export interface Database {
     };
     Enums: {
       user_role: 'customer' | 'staff' | 'admin';
-      product_cond: 'new' | 'open_box' | 'refurbished';
+      product_cond: 'new' | 'open_box' | 'refurbished' | 'used';
       order_status:
         | 'pending'
         | 'confirmed'

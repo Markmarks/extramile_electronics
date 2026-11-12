@@ -1,13 +1,10 @@
+import { CONDITION_LABELS, PRODUCT_CONDITIONS } from '@extramile/core';
 import { X } from 'lucide-react';
 import Link from 'next/link';
-import type { Brand, Condition } from '@/lib/catalog/queries';
+import type { Brand } from '@/lib/catalog/queries';
 import { buildFacetHref } from '@/lib/catalog/url';
 
-const CONDITIONS: [Condition, string][] = [
-  ['new', 'New'],
-  ['open_box', 'Open box'],
-  ['refurbished', 'Refurbished'],
-];
+const CONDITIONS = PRODUCT_CONDITIONS.map((c) => [c, CONDITION_LABELS[c]] as const);
 
 function Chip({
   href,

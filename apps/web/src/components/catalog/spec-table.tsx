@@ -1,20 +1,9 @@
-function humanize(key: string): string {
-  return key
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\bIn\b/, '(in)')
-    .replace(/\bMah\b/, '(mAh)')
-    .replace(/\bGb\b/i, 'GB')
-    .replace(/\bMp\b/, 'MP')
-    .replace(/\b(Anc|Hdr|Os|Ram|Cpu|Gpu)\b/g, (w) => w.toUpperCase());
-}
+import { displaySpecValue, orderSpecKeys, specLabel } from '@extramile/core';
 
-function displayValue(value: unknown): string {
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  return String(value);
-}
-
-/** Spec list rendered from the category's spec_schema key order, falling back to the raw specs. */
+/**
+ * Spec list: the category's spec_schema keys first (in SPEC_ORDER), then any extra
+ * specs staff added for this product. Empty values are skipped.
+ */
 export function SpecTable({
   specs,
   schema,
@@ -22,11 +11,13 @@ export function SpecTable({
   specs: Record<string, unknown>;
   schema: Record<string, unknown>;
 }) {
-  const keys = Object.keys(schema).length > 0 ? Object.keys(schema) : Object.keys(specs);
+  const ordered = orderSpecKeys(Object.keys(schema));
+  const extras = orderSpecKeys(Object.keys(specs).filter((k) => !ordered.includes(k)));
+  const keys = [...ordered, ...extras];
   const rows = keys.filter((k) => specs[k] !== undefined && specs[k] !== null && specs[k] !== '');
   if (rows.length === 0) return null;
 
-  // iOS inset grouped list: label left, value right, hairlines inset from the leading edge.
+  // Card list: label left, value right, hairlines inset from the leading edge.
   return (
     <dl className="overflow-hidden rounded-2xl bg-card text-[15px]">
       {rows.map((k, i) => (
@@ -36,8 +27,8 @@ export function SpecTable({
               i > 0 ? 'border-t border-black/[0.06]' : ''
             }`}
           >
-            <dt className="text-muted-foreground">{humanize(k)}</dt>
-            <dd className="text-right font-medium">{displayValue(specs[k])}</dd>
+            <dt className="text-muted-foreground">{specLabel(k)}</dt>
+            <dd className="text-right font-medium">{displaySpecValue(specs[k])}</dd>
           </div>
         </div>
       ))}

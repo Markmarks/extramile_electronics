@@ -1,3 +1,4 @@
+import { CONDITION_LABELS } from '@extramile/core';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ProductListItem } from '@/lib/catalog/queries';
@@ -34,6 +35,11 @@ export function ProductCard({ product }: { product: ProductListItem }) {
               Sold out
             </span>
           )}
+          {product.condition !== 'new' && (
+            <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+              {CONDITION_LABELS[product.condition]}
+            </span>
+          )}
           {product.inStock && onSale && (
             <span className="rounded-md bg-foreground px-2 py-0.5 text-[11px] font-semibold text-background">
               Sale
@@ -42,11 +48,12 @@ export function ProductCard({ product }: { product: ProductListItem }) {
         </div>
       </div>
       <div className="space-y-0.5 px-2 pb-2 pt-3">
-        {product.brand && (
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            {product.brand.name}
-          </p>
-        )}
+        <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          {product.brand && `${product.brand.name} · `}
+          <span className={product.condition === 'new' ? '' : 'text-amber-700'}>
+            {CONDITION_LABELS[product.condition]}
+          </span>
+        </p>
         <h3 className="line-clamp-1 text-[15px] font-semibold">{product.title}</h3>
         <Price amount={product.minPrice} compareAt={product.compareAtPrice} className="text-sm" />
       </div>

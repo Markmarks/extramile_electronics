@@ -1,6 +1,6 @@
 'use client';
 
-import { formatGHS } from '@extramile/core';
+import { CONDITION_LABELS, CONDITION_NOTES, formatGHS } from '@extramile/core';
 import { Minus, Plus, ShieldCheck, Star, Truck, Wallet } from 'lucide-react';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -140,6 +140,18 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
             </p>
           )}
           <h1 className="text-balance text-3xl font-semibold">{product.title}</h1>
+          <p className="flex flex-wrap items-center gap-2 text-[13px]">
+            <span
+              className={`rounded-md px-2 py-0.5 font-semibold ${
+                product.condition === 'new'
+                  ? 'bg-success/10 text-[#248A3D]'
+                  : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {CONDITION_LABELS[product.condition]}
+            </span>
+            <span className="text-muted-foreground">{CONDITION_NOTES[product.condition]}</span>
+          </p>
           {product.ratingCount > 0 && (
             <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
               <Star className="size-3.5 fill-[#FF9500] text-[#FF9500]" aria-hidden />
