@@ -34,6 +34,8 @@ interface AuthState {
   lock: () => void;
   /** Forget this device — wipes the vault and returns to enrolment. */
   signOut: () => Promise<void>;
+  /** Change the signed-in user's password. Returns an error message, or null on success. */
+  updatePassword: (newPassword: string) => Promise<string | null>;
 }
 
 const Ctx = createContext<AuthState | null>(null);
@@ -170,9 +172,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPhase('enroll');
   }, []);
 
+  const updatePassword = useCallback(async (newPassword: string): Promise<string | null> => {
+    const { error: e } = await supabase.auth.updateUser({ password: newPassword });
+    if (e) return e.message;
+    // If changing the password rotated the refresh token, keep the PIN vault in sync.
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.refresh_token) {
+      await sessionReseal(data.session.refresh_token).catch(() => {});
+    }
+    return null;
+  }, []);
+
   const value = useMemo<AuthState>(
-    () => ({ phase, user, role, error, enroll, unlock, lock, signOut }),
-    [phase, user, role, error, enroll, unlock, lock, signOut],
+    () => ({ phase, user, role, error, enroll, unlock, lock, signOut, updatePassword }),
+    [phase, user, role, error, enroll, unlock, lock, signOut, updatePassword],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

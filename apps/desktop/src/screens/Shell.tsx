@@ -1,5 +1,6 @@
 import {
   Boxes,
+  KeyRound,
   LayoutDashboard,
   Lock,
   type LucideIcon,
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
+import { ChangePasswordDialog } from '../components/ChangePasswordDialog';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { isPreview } from '../lib/preview';
@@ -25,6 +27,7 @@ export function Shell() {
   const role = authRole ?? (isPreview ? 'admin' : null);
   const { online, lastSync } = useOfflineSync(true);
   const [view, setView] = useState<View>('home');
+  const [changePw, setChangePw] = useState(false);
 
   const nav: { id: View; label: string; icon: LucideIcon }[] = [
     { id: 'home', label: 'Dashboard', icon: LayoutDashboard },
@@ -87,6 +90,15 @@ export function Shell() {
               </p>
             </div>
           </div>
+          {(user || isPreview) && (
+            <button
+              type="button"
+              className="btn-secondary w-full"
+              onClick={() => setChangePw(true)}
+            >
+              <KeyRound className="size-3.5" aria-hidden /> Change password
+            </button>
+          )}
           <button type="button" className="btn-secondary w-full" onClick={lock}>
             <Lock className="size-3.5" aria-hidden /> Lock
           </button>
@@ -109,6 +121,8 @@ export function Shell() {
           {view === 'users' && role === 'admin' && <Users />}
         </main>
       </div>
+
+      {changePw && <ChangePasswordDialog onClose={() => setChangePw(false)} />}
     </div>
   );
 }
