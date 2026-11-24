@@ -30,7 +30,46 @@ function json(body: unknown, status = 200): Response {
 // Actions only an admin (not staff) may perform.
 const ADMIN_ONLY = new Set(['role_change', 'staff_invite']);
 
-Deno.serve(async (req) => {
+// The back-office calls this from a webview, so the browser enforces CORS: it sends an
+// OPTIONS preflight first and drops the call unless the response allows the origin.
+// Origins: the Tauri app on Windows (WebView2 → http(s)://tauri.localhost), macOS/Linux
+// (tauri://localhost), and `vite dev` on :1420. CORS is not the security boundary — every
+// call still needs a valid staff/admin JWT and is role-checked below.
+const ALLOWED_ORIGINS = new Set([
+  'http://tauri.localhost',
+  'https://tauri.localhost',
+  'tauri://localhost',
+  'http://localhost:1420',
+]);
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin');
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers':
+      req.headers.get('Access-Control-Request-Headers') ??
+      'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  };
+}
+
+Deno.serve(async (req: Request) => {
+  const cors = corsHeaders(req);
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: cors['Access-Control-Allow-Origin'] ? 204 : 403,
+      headers: cors,
+    });
+  }
+  const res = await handleRequest(req);
+  for (const [k, v] of Object.entries(cors)) res.headers.set(k, v);
+  return res;
+});
+
+async function handleRequest(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -114,7 +153,7 @@ Deno.serve(async (req) => {
     .eq('idempotency_key', body.idempotency_key);
 
   return json({ ok: true, result });
-});
+}
 
 async function handle(
   admin: SupabaseClient,
