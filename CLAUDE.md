@@ -28,6 +28,9 @@ touching pricing, auth, payments or migrations.
 - `apps/*/e2e/*.spec.ts` — Playwright, root `playwright.config.ts`, runs in installed
   Edge (`channel: msedge`, same engine as WebView2). Tests tagged `@backend` self-skip
   when Supabase is unreachable; `pnpm e2e:offline` runs only the rest.
+- `apps/web/tests/db` — every migration applied in order to in-process Postgres (PGlite,
+  stubbed auth/storage/roles); tests grants, RLS, order-status trigger, reservations.
+  `pnpm --filter @extramile/web test:db`. Add a case here for any migration change.
 - `apps/web/tests/rls` needs a live database (`pnpm --filter @extramile/web test:rls`).
 
 ## Gotchas
@@ -48,5 +51,11 @@ touching pricing, auth, payments or migrations.
   server that was running across a `pnpm add`/`install`. Stop it, delete
   `apps/desktop/node_modules/.vite`, start again. Not an app bug.
 - Playwright 1.65 needs Node ≥ 22.
+- Order status changes only via server code (web server action / admin-actions
+  `order_transition`), never a direct `update orders` from a client: the DB trigger
+  `orders_guard_status` enforces legal moves; signed-in users have no UPDATE on orders.
+  Keep `order_transition_allowed()` in sync with `packages/core/src/order-state.ts`.
+- The live DB must be migrated with `supabase db push` from the repo; never change it in
+  the dashboard (that caused 20261124000001–3 to exist only in production).
 - There is no seeded staff account. Never type the user's real credentials — ask them to
   sign in themselves.

@@ -84,7 +84,7 @@ export function Orders() {
     if (!to) return;
     setMessage(null);
     try {
-      await transitionOrder(detail.id, to, online);
+      await transitionOrder(detail.id, detail.status as OrderStatus, to, online);
       setMessage(
         online
           ? { tone: 'ok', text: `Marked ${to}.` }
@@ -98,10 +98,21 @@ export function Orders() {
 
   async function saveSerials(serials: string[]) {
     if (!detail || !capturingItem) return;
-    await captureSerials(detail.id, capturingItem.id, serials, online);
-    setCapturingItem(null);
-    setMessage({ tone: 'ok', text: 'Serials captured.' });
-    await refresh();
+    try {
+      await captureSerials(detail.id, capturingItem.id, serials, online);
+      setCapturingItem(null);
+      setMessage(
+        online
+          ? { tone: 'ok', text: 'Serials captured.' }
+          : { tone: 'info', text: 'Serials queued — will sync when online.' },
+      );
+      await refresh();
+    } catch (err) {
+      setMessage({
+        tone: 'error',
+        text: err instanceof Error ? err.message : 'Saving serials failed.',
+      });
+    }
   }
 
   async function print() {

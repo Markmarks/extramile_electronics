@@ -21,7 +21,8 @@ change as **Pre-existing**.
 | `getSession(` on the server | Must be `getUser()` for authorization. |
 | New table or migration | RLS enabled with explicit policies; change is a new file in `supabase/migrations/`; `scripts/check-rls.sql` still passes. |
 | Paystack webhook handler | HMAC SHA512 over the raw body, then `/transaction/verify/:reference`; idempotent on event id. |
-| `order_status` enum, `order-state.ts` | TS transition table matches the DB; terminal states stay terminal. |
+| `order_status` enum, `order-state.ts`, `orders_guard_status` | `order_transition_allowed()` matches the TS table (`tests/db` asserts it); terminal states stay terminal; status writes go through server code with an expected-`from` check. |
+| `update(...)` on `orders` / `order_items` from a client | Not allowed for status; serial writes check that a row changed (RLS refusals return no error). |
 | Phone numbers / `normalizeMsisdn` | Output matches `^\+233[1-9]\d{8}$` (DB check constraint); bare 9-digit input that starts with `233` stays a national number. |
 | Desktop auth, PIN vault, keychain, `AuthProvider` | Access token never persisted to disk; errors shown to the user (no silent hang); still works offline-locked. |
 | Route handlers / server actions taking input | Zod-validated. |

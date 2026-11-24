@@ -1,6 +1,6 @@
 import type { Enums } from '@extramile/core';
 import { supabase } from './supabase';
-import { deviceId } from './tauri';
+import { invokeAdminAction } from './adminActions';
 
 // User management. Reads use the staff JWT directly (RLS `own_profile` lets staff
 // read every profile). Mutations go through the `admin-actions` Edge Function, which
@@ -28,23 +28,10 @@ export async function listUsers(): Promise<UserRow[]> {
   return data ?? [];
 }
 
-async function callAdmin(action: string, payload: Record<string, unknown>): Promise<void> {
-  const { error } = await supabase.functions.invoke('admin-actions', {
-    body: {
-      action,
-      payload,
-      idempotency_key: globalThis.crypto.randomUUID(),
-      device_id: await deviceId(),
-      source: 'desktop',
-    },
-  });
-  if (error) throw new Error(error.message);
-}
-
 export async function changeRole(userId: string, role: Role): Promise<void> {
-  await callAdmin('role_change', { user_id: userId, role });
+  await invokeAdminAction('role_change', { user_id: userId, role });
 }
 
 export async function inviteStaff(email: string, role: Role): Promise<void> {
-  await callAdmin('staff_invite', { email, role });
+  await invokeAdminAction('staff_invite', { email, role });
 }

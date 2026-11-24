@@ -123,6 +123,13 @@ async function handle(
 ): Promise<Record<string, unknown>> {
   const p = body.payload ?? {};
   switch (body.action) {
+    case 'order_transition':
+      return orderTransition(
+        admin,
+        String(p.order_id),
+        p.from ? String(p.from) : null,
+        String(p.to),
+      );
     case 'refund':
       return refund(admin, String(p.order_id), p.amount ? Number(p.amount) : null, actorId);
     case 'role_change':
@@ -143,6 +150,108 @@ async function handle(
       return staffInvite(admin, String(p.email), (p.role as Role) ?? 'staff');
     default:
       throw new Error(`unknown action: ${body.action}`);
+  }
+}
+
+// Customer emails on fulfilment milestones — same events/subjects as the storefront's
+// advanceOrderAction (apps/web/src/lib/orders/actions.ts), so an order gets exactly one
+// email per milestone whichever app moved it (notifications unique slot).
+const MILESTONE_EMAIL: Record<
+  string,
+  { event: string; subject: (n: string) => string; body: (n: string) => string }
+> = {
+  dispatched: {
+    event: 'dispatch',
+    subject: (n) => `Order ${n} is on its way`,
+    body: (n) => `<p>Order ${n} has been dispatched and is on its way to you.</p>`,
+  },
+  delivered: {
+    event: 'delivery',
+    subject: (n) => `Order ${n} delivered`,
+    body: (n) => `<p>Order ${n} was delivered. Enjoy — and keep this email for your warranty.</p>`,
+  },
+};
+
+/**
+ * Move an order one step. The database enforces which moves are legal (trigger
+ * orders_guard_status, migration 20261124000004); here we add the optimistic check —
+ * `from` is the status the staff member was looking at, so a change made meanwhile on
+ * the storefront (e.g. a refund) is never overwritten — then email the customer.
+ */
+async function orderTransition(
+  admin: SupabaseClient,
+  orderId: string,
+  from: string | null,
+  to: string,
+): Promise<Record<string, unknown>> {
+  let q = admin.from('orders').update({ status: to }).eq('id', orderId);
+  if (from) q = q.eq('status', from);
+  const { data, error } = await q.select('id, order_number, email');
+  if (error) {
+    const m = error.message.match(/(INVALID_TRANSITION|PAID_ORDER_NEEDS_REFUND)[^\n]*/);
+    throw new Error(m ? m[0] : error.message);
+  }
+  const order = data?.[0] as { id: string; order_number: string; email: string } | undefined;
+  if (!order) {
+    const { data: cur } = await admin.from('orders').select('status').eq('id', orderId).limit(1);
+    if (!cur?.[0]) throw new Error('order_not_found');
+    throw new Error(`STALE: order is now ${cur[0].status}, not ${from} — reload and try again`);
+  }
+
+  let emailed: string = 'none';
+  const milestone = MILESTONE_EMAIL[to];
+  if (milestone) emailed = await notifyOnce(admin, order, milestone);
+  return { orderId, from, to, emailed };
+}
+
+async function notifyOnce(
+  admin: SupabaseClient,
+  order: { id: string; order_number: string; email: string },
+  m: { event: string; subject: (n: string) => string; body: (n: string) => string },
+): Promise<string> {
+  // The unique (order_id, event, channel) row reserves the send; a duplicate means sent.
+  const { error: slotErr } = await admin
+    .from('notifications')
+    .insert({ order_id: order.id, event: m.event, channel: 'email' });
+  if (slotErr) return 'duplicate';
+
+  const release = () =>
+    admin
+      .from('notifications')
+      .delete()
+      .eq('order_id', order.id)
+      .eq('event', m.event)
+      .eq('channel', 'email');
+
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  const fromAddr = Deno.env.get('RESEND_FROM');
+  if (!apiKey || !fromAddr) {
+    await release(); // not configured: keep the slot free so a later retry can send
+    return 'skipped_not_configured';
+  }
+  const { data: sup } = await admin
+    .from('email_suppressions')
+    .select('email')
+    .eq('email', order.email.toLowerCase())
+    .limit(1);
+  if (sup?.length) return 'suppressed';
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: fromAddr,
+        to: order.email,
+        subject: m.subject(order.order_number),
+        html: m.body(order.order_number),
+      }),
+    });
+    if (!res.ok) throw new Error(`resend_${res.status}`);
+    return 'sent';
+  } catch {
+    await release(); // email failure never blocks the status change
+    return 'failed';
   }
 }
 
@@ -214,15 +323,13 @@ async function refund(
         .from('product_variants')
         .update({ stock: stock + it.qty })
         .eq('id', it.variant_id);
-      await admin
-        .from('inventory_movements')
-        .insert({
-          variant_id: it.variant_id,
-          delta: it.qty,
-          reason: 'return',
-          order_id: orderId,
-          actor: actorId,
-        });
+      await admin.from('inventory_movements').insert({
+        variant_id: it.variant_id,
+        delta: it.qty,
+        reason: 'return',
+        order_id: orderId,
+        actor: actorId,
+      });
     }
   }
   return { orderId, refundAmount, full };

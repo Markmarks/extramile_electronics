@@ -8,7 +8,15 @@ import { advanceOrderAction } from '@/lib/orders/actions';
 
 const FORWARD: OrderStatus[] = ['confirmed', 'packed', 'dispatched', 'delivered', 'cancelled'];
 
-export function OrderTransition({ orderId, status }: { orderId: string; status: OrderStatus }) {
+export function OrderTransition({
+  orderId,
+  status,
+  paymentStatus,
+}: {
+  orderId: string;
+  status: OrderStatus;
+  paymentStatus?: string;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +33,9 @@ export function OrderTransition({ orderId, status }: { orderId: string; status: 
     });
   }
 
-  const options = FORWARD.filter((s) => canTransition(status, s));
+  // Paid orders are refunded, not cancelled — the database refuses the cancel.
+  const paid = paymentStatus === 'paid' || paymentStatus === 'partially_refunded';
+  const options = FORWARD.filter((s) => canTransition(status, s) && !(paid && s === 'cancelled'));
   if (options.length === 0)
     return <p className="text-sm text-muted-foreground">No further actions.</p>;
 

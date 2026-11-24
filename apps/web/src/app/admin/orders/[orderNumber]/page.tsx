@@ -37,7 +37,11 @@ export default async function AdminOrderPage({
 
       <section className="space-y-2 rounded-lg border p-4">
         <h2 className="text-sm font-semibold">Fulfilment</h2>
-        <OrderTransition orderId={order.id} status={order.status as OrderStatus} />
+        <OrderTransition
+          orderId={order.id}
+          status={order.status as OrderStatus}
+          paymentStatus={order.paymentStatus}
+        />
       </section>
 
       <section className="text-sm">
