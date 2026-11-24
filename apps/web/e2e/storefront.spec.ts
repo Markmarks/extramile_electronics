@@ -64,7 +64,13 @@ test.describe('storefront: buy', { tag: '@backend' }, () => {
   test('add to bag → bag shows the item and subtotal → checkout form', async ({ page }) => {
     await page.goto('/');
     await page.locator('a[href^="/p/"]').first().click();
-    await page.getByRole('button', { name: /add to bag/i }).click();
+    const add = page.getByRole('button', { name: /add to bag/i });
+    await add.click();
+    // Wait for the server action to finish (button leaves "Adding…") so the cart cookie
+    // is set before /cart renders server-side — the header count loads client-side later
+    // and would otherwise hide this race.
+    await expect(page.getByRole('button', { name: /adding/i })).toHaveCount(0, { timeout: 30_000 });
+    await expect(add).toBeEnabled();
     await page.goto('/cart');
     await expect(page.getByText('Subtotal')).toBeVisible();
     await expect(page.getByText(/GH₵\s?[\d,]+\.\d{2}/).first()).toBeVisible();
