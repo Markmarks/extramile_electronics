@@ -10,16 +10,20 @@ export const dynamic = 'force-dynamic';
  * the `db` field reports whether the database is reachable/configured.
  */
 export async function GET() {
-  let db: string;
+  // This endpoint is public: never echo raw error messages. Driver/runtime errors can
+  // contain env values (e.g. an invalid header value that *is* the service-role key).
+  // Details go to the server log only.
+  let db: 'ok' | 'unconfigured' | 'error';
   try {
     const supabase = createAdminClient();
     const { error } = await supabase.from('shipping_zones').select('id').limit(1);
-    db = error ? `error: ${error.message}` : 'ok';
+    if (error) console.error('[health] db query failed:', error.code ?? 'unknown');
+    db = error ? 'error' : 'ok';
   } catch (err) {
-    db =
-      err instanceof Error && err.message.startsWith('Missing environment')
-        ? 'unconfigured'
-        : `error: ${err instanceof Error ? err.message : 'unknown'}`;
+    const missing = err instanceof Error && err.message.startsWith('Missing environment');
+    if (!missing)
+      console.error('[health] db client failed:', err instanceof Error ? err.name : 'unknown');
+    db = missing ? 'unconfigured' : 'error';
   }
 
   return NextResponse.json({
