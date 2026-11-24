@@ -1,0 +1,4 @@
+{
+  "mode": "observe",
+  "_comment": "off | observe | enforce. Start in observe, review .claude/verify-gate.log for false positives, then switch to enforce."
+}

@@ -1,0 +1,4 @@
+# Stamp every commit with how it was verified, so unverified ones can be queried:
+#   git log --grep="^Verified: none" --format="%h %s"
+# Adds "Verified: none" when the message has no Verified: line. Never blocks a commit.
+node scripts/stamp-verified.mjs "$1"

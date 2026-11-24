@@ -11,6 +11,9 @@
     "build": "pnpm -r --filter=./packages/* --filter=./apps/* build",
     "dev": "pnpm --filter @extramile/web dev",
     "test": "pnpm -r test",
+    "e2e": "playwright test",
+    "e2e:offline": "playwright test --grep-invert @backend",
+    "verify:preflight": "node scripts/verify-preflight.mjs",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
@@ -19,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
+    "@playwright/test": "^1.65.1",
     "@types/node": "^22.10.7",
     "eslint": "^9.18.0",
     "husky": "^9.1.7",

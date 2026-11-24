@@ -20,7 +20,10 @@ export function normalizeMsisdn(input: string): string {
   let nsn: string;
   if (cleaned.startsWith('+233')) {
     nsn = cleaned.slice(4);
-  } else if (cleaned.startsWith('233')) {
+  } else if (cleaned.startsWith('233') && cleaned.length === 12) {
+    // Only a 12-digit string carries the bare country code. A 9-digit "233…" is itself a
+    // national number (e.g. Glo 023 3xx xxxx typed without the trunk 0) — found by the
+    // MSISDN property test in tests/properties.test.ts.
     nsn = cleaned.slice(3);
   } else if (cleaned.startsWith('0')) {
     nsn = cleaned.slice(1);

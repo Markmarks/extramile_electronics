@@ -48,3 +48,6 @@ pnpm-debug.log*
 
 # claude code (local, machine-specific — may contain secrets)
 .claude/settings.local.json
+
+# claude verify gate log (local)
+.claude/verify-gate.log

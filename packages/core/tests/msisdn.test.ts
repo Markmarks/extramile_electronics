@@ -9,6 +9,9 @@ describe('U-11: MSISDN normaliser', () => {
     expect(normalizeMsisdn('233244123456')).toBe('+233244123456');
     expect(normalizeMsisdn('+233 24 412 3456')).toBe('+233244123456');
     expect(normalizeMsisdn('024-412-3456')).toBe('+233244123456');
+    // 9-digit national number that happens to start with 233 (Glo 023…, no trunk 0)
+    expect(normalizeMsisdn('233456789')).toBe('+233233456789');
+    expect(normalizeMsisdn('0233456789')).toBe('+233233456789');
   });
 
   it('rejects a double-zero / wrong-length number', () => {

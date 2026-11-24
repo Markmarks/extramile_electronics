@@ -27,7 +27,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     // Node scripts (build/CI tooling) — declare Node globals.
-    files: ['scripts/**/*.{js,mjs,cjs}'],
+    files: ['scripts/**/*.{js,mjs,cjs}', '.claude/hooks/**/*.{js,mjs,cjs}'],
     languageOptions: {
       globals: {
         process: 'readonly',
@@ -35,6 +35,8 @@ export default tseslint.config(
         URL: 'readonly',
         Buffer: 'readonly',
         __dirname: 'readonly',
+        fetch: 'readonly',
+        AbortSignal: 'readonly',
       },
     },
   },
