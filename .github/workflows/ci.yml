@@ -59,7 +59,8 @@ jobs:
   # Enabled from phase P2 once supabase/migrations exist.
   database:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('supabase/migrations/*.sql') != '' }}
+    # (A job-level `if: hashFiles(...)` is invalid in GitHub Actions — hashFiles only
+    # works in step context — and made the whole workflow fail with zero jobs.)
     env:
       RUN_RLS: '1'
     steps:

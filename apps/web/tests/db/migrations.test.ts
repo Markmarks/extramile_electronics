@@ -147,6 +147,88 @@ describe('stock reservations stay consistent', () => {
   });
 });
 
+describe('stock adjustments (adjust_stock)', () => {
+  const adjust = (variantId: string, delta: number) =>
+    as(db, 'service_role', null, (tx) =>
+      tx.query<{ s: number }>(`select adjust_stock($1, $2, 'adjust') as s`, [variantId, delta]),
+    );
+
+  it('applies the delta atomically and records the movement', async () => {
+    const { variantId } = await createPendingOrder(db, 1);
+    const before = await variantCounts(db, variantId);
+    const { rows } = await adjust(variantId, 3);
+    expect(rows[0]!.s).toBe(before.stock + 3);
+    const mv = await db.query<{ delta: number }>(
+      `select delta from inventory_movements where variant_id = $1 order by id desc limit 1`,
+      [variantId],
+    );
+    expect(mv.rows[0]!.delta).toBe(3);
+  });
+
+  it('never drops stock below the units reserved for open orders', async () => {
+    const { variantId } = await createPendingOrder(db, 2);
+    const { stock, reserved } = await variantCounts(db, variantId);
+    await expect(adjust(variantId, -(stock - reserved) - 1)).rejects.toThrow(
+      /WOULD_GO_BELOW_RESERVED/,
+    );
+    await adjust(variantId, -(stock - reserved)); // down to exactly the reserved units is fine
+    expect((await variantCounts(db, variantId)).stock).toBe(reserved);
+  });
+
+  it('a sale committed between two adjustments is never lost', async () => {
+    const { orderId, variantId } = await createPendingOrder(db, 1);
+    const start = (await variantCounts(db, variantId)).stock;
+    await adjust(variantId, 5);
+    await markPaid(orderId); // -1
+    await adjust(variantId, -2);
+    expect((await variantCounts(db, variantId)).stock).toBe(start + 5 - 1 - 2);
+  });
+
+  it('is server-only', async () => {
+    const { variantId } = await createPendingOrder(db);
+    await expect(
+      as(db, 'authenticated', staff, (tx) =>
+        tx.query(`select adjust_stock($1, 1, 'x')`, [variantId]),
+      ),
+    ).rejects.toThrow(/permission denied/);
+  });
+});
+
+describe('staff device registry', () => {
+  const register = (uid: string, device: string) =>
+    as(db, 'authenticated', uid, (tx) =>
+      tx.query<{ revoked: boolean }>(
+        `select register_staff_device($1, 'Counter PC', 'windows', '1.0') as revoked`,
+        [device],
+      ),
+    );
+
+  it('staff register their device; it starts not revoked', async () => {
+    const { rows } = await register(staff, 'device-aaaa-1111');
+    expect(rows[0]!.revoked).toBe(false);
+    const { rows: d } = await db.query<{ user_id: string }>(
+      `select user_id from staff_devices where device_id = 'device-aaaa-1111'`,
+    );
+    expect(d[0]!.user_id).toBe(staff);
+  });
+
+  it('a revoked device stays revoked even when it re-registers', async () => {
+    await register(staff, 'device-bbbb-2222');
+    await db.query(
+      `update staff_devices set is_revoked = true where device_id = 'device-bbbb-2222'`,
+    );
+    const { rows } = await register(staff, 'device-bbbb-2222');
+    expect(rows[0]!.revoked).toBe(true);
+  });
+
+  it('customers and anonymous callers cannot register devices', async () => {
+    await expect(register(customer, 'device-cccc-3333')).rejects.toThrow(/FORBIDDEN/);
+    await expect(
+      as(db, 'anon', null, (tx) => tx.query(`select register_staff_device('device-dddd-4444')`)),
+    ).rejects.toThrow(/permission denied/);
+  });
+});
+
 describe('API role permissions', () => {
   it('staff cannot change order status directly (must use admin-actions / server)', async () => {
     const { orderId } = await createPendingOrder(db);
@@ -191,6 +273,18 @@ describe('API role permissions', () => {
         as(db, role, null, (tx) => tx.query(`select release_expired_reservations()`)),
       ).rejects.toThrow(/permission denied/);
     }
+  });
+
+  it('the order trigger function is not callable over the API, but still fires', async () => {
+    for (const role of ['anon', 'authenticated'] as const) {
+      await expect(
+        as(db, role, role === 'authenticated' ? staff : null, (tx) =>
+          tx.query(`select orders_guard_status()`),
+        ),
+      ).rejects.toThrow(/permission denied/);
+    }
+    const { orderId } = await createPendingOrder(db);
+    await expect(setStatus(orderId, 'delivered')).rejects.toThrow(/INVALID_TRANSITION/);
   });
 
   it('anon can read the catalogue but not write it', async () => {

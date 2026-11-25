@@ -38,6 +38,15 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ];
 
+// Image optimisation is limited to this project's storage host (set at build time).
+const supabaseHost = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').hostname || 'invalid.supabase.co';
+  } catch {
+    return 'invalid.supabase.co';
+  }
+})();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
@@ -48,8 +57,17 @@ const nextConfig = {
   transpilePackages: ['@extramile/core', '@extramile/ui'],
   images: {
     formats: ['image/avif', 'image/webp'],
-    remotePatterns: [{ protocol: 'https', hostname: '**.supabase.co' }],
+    // Only our own project's public bucket — `**.supabase.co` let anyone run arbitrary
+    // images from any Supabase project through our optimizer (cost + attack surface).
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: supabaseHost,
+        pathname: '/storage/v1/object/public/product-images/**',
+      },
+    ],
   },
+  poweredByHeader: false,
   // Linting runs as its own CI step against the repo-root flat config.
   eslint: { ignoreDuringBuilds: true },
   // Type errors must still fail the build.

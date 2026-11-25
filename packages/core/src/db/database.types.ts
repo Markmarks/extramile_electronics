@@ -735,6 +735,25 @@ export interface Database {
         Args: { p_order_id: string };
         Returns: undefined;
       };
+      adjust_stock: {
+        Args: {
+          p_variant: string;
+          p_delta: number;
+          p_reason: string;
+          p_actor?: string | null;
+          p_order?: string | null;
+        };
+        Returns: number;
+      };
+      register_staff_device: {
+        Args: {
+          p_device_id: string;
+          p_label?: string | null;
+          p_os?: string | null;
+          p_app_version?: string | null;
+        };
+        Returns: boolean;
+      };
       release_expired_reservations: {
         Args: Record<PropertyKey, never>;
         Returns: number;

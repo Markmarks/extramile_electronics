@@ -35,3 +35,31 @@ export async function changeRole(userId: string, role: Role): Promise<void> {
 export async function inviteStaff(email: string, role: Role): Promise<void> {
   await invokeAdminAction('staff_invite', { email, role });
 }
+
+// ── Back-office devices (staff_devices) ─────────────────────────────────────────
+// Each back-office PC registers itself on enrol/unlock (register_staff_device RPC).
+// Admins can revoke a lost/stolen PC: it is wiped at its next unlock and refused by
+// admin-actions immediately. Revoke/restore are admin-only server-side.
+
+export interface DeviceRow {
+  device_id: string;
+  label: string | null;
+  os: string | null;
+  app_version: string | null;
+  is_revoked: boolean;
+  last_seen_at: string;
+  profiles: { full_name: string | null } | null;
+}
+
+export async function listDevices(): Promise<DeviceRow[]> {
+  const { data } = await supabase
+    .from('staff_devices')
+    .select('device_id, label, os, app_version, is_revoked, last_seen_at, profiles(full_name)')
+    .order('last_seen_at', { ascending: false })
+    .returns<DeviceRow[]>();
+  return data ?? [];
+}
+
+export async function setDeviceRevoked(deviceId: string, revoked: boolean): Promise<void> {
+  await invokeAdminAction(revoked ? 'device_revoke' : 'device_restore', { device_id: deviceId });
+}

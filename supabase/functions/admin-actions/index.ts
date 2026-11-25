@@ -28,7 +28,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 // Actions only an admin (not staff) may perform.
-const ADMIN_ONLY = new Set(['role_change', 'staff_invite']);
+const ADMIN_ONLY = new Set(['role_change', 'staff_invite', 'device_revoke', 'device_restore']);
 
 // The back-office calls this from a webview, so the browser enforces CORS: it sends an
 // OPTIONS preflight first and drops the call unless the response allows the origin.
@@ -115,6 +115,28 @@ async function handleRequest(req: Request): Promise<Response> {
     return json({ error: 'forbidden' }, 403);
   }
 
+  // A revoked back-office PC (lost/stolen) may not do privileged work, even with a still-
+  // valid session. Unknown device ids are allowed: the app registers itself on unlock.
+  if (body.device_id && body.source !== 'web') {
+    const { data: dev } = await admin
+      .from('staff_devices')
+      .select('is_revoked')
+      .eq('device_id', body.device_id)
+      .limit(1);
+    if (dev?.[0]?.is_revoked) {
+      await admin.from('audit_log').insert({
+        actor: user.id,
+        action: `admin_actions.revoked_device.${body.action}`,
+        entity: 'staff_devices',
+        entity_id: null,
+        after: { device_id: body.device_id },
+        source: body.source ?? 'desktop',
+        device_id: body.device_id,
+      });
+      return json({ error: 'device_revoked' }, 403);
+    }
+  }
+
   // Idempotency: reserve the key; replay returns the stored result.
   const { error: reserveErr } = await admin.from('outbox_receipts').insert({
     idempotency_key: body.idempotency_key,
@@ -174,7 +196,9 @@ async function handle(
     case 'role_change':
       return roleChange(admin, String(p.user_id), String(p.role));
     case 'device_revoke':
-      return deviceRevoke(admin, String(p.device_id));
+      return setDeviceRevoked(admin, String(p.device_id), true);
+    case 'device_restore':
+      return setDeviceRevoked(admin, String(p.device_id), false);
     case 'stock_adjust_large':
       return stockAdjust(
         admin,
@@ -352,23 +376,15 @@ async function refund(
       .eq('order_id', orderId);
     for (const it of items ?? []) {
       if (!it.variant_id) continue;
-      const { data: v } = await admin
-        .from('product_variants')
-        .select('stock')
-        .eq('id', it.variant_id)
-        .limit(1);
-      const stock = v?.[0]?.stock ?? 0;
-      await admin
-        .from('product_variants')
-        .update({ stock: stock + it.qty })
-        .eq('id', it.variant_id);
-      await admin.from('inventory_movements').insert({
-        variant_id: it.variant_id,
-        delta: it.qty,
-        reason: 'return',
-        order_id: orderId,
-        actor: actorId,
+      // Atomic: adjust_stock does the arithmetic in one UPDATE and logs the movement.
+      const { error } = await admin.rpc('adjust_stock', {
+        p_variant: it.variant_id,
+        p_delta: it.qty,
+        p_reason: 'return',
+        p_actor: actorId,
+        p_order: orderId,
       });
+      if (error) throw new Error(`restock_failed: ${error.message}`);
     }
   }
   return { orderId, refundAmount, full };
@@ -385,16 +401,19 @@ async function roleChange(
   return { userId, role };
 }
 
-async function deviceRevoke(
+async function setDeviceRevoked(
   admin: SupabaseClient,
   deviceId: string,
+  revoked: boolean,
 ): Promise<Record<string, unknown>> {
-  const { error } = await admin
+  const { data, error } = await admin
     .from('staff_devices')
-    .update({ is_revoked: true })
-    .eq('device_id', deviceId);
+    .update({ is_revoked: revoked })
+    .eq('device_id', deviceId)
+    .select('device_id');
   if (error) throw new Error(error.message);
-  return { deviceId, revoked: true };
+  if (!data?.length) throw new Error('device_not_found');
+  return { deviceId, revoked };
 }
 
 async function stockAdjust(
@@ -405,20 +424,19 @@ async function stockAdjust(
   actorId: string,
 ): Promise<Record<string, unknown>> {
   if (!Number.isInteger(delta) || delta === 0) throw new Error('invalid_delta');
-  const { data: v } = await admin
-    .from('product_variants')
-    .select('stock')
-    .eq('id', variantId)
-    .limit(1);
-  const stock = v?.[0]?.stock;
-  if (stock === undefined) throw new Error('variant_not_found');
-  const next = stock + delta;
-  if (next < 0) throw new Error('would_go_negative');
-  await admin.from('product_variants').update({ stock: next }).eq('id', variantId);
-  await admin
-    .from('inventory_movements')
-    .insert({ variant_id: variantId, delta, reason, actor: actorId });
-  return { variantId, delta, stock: next };
+  // One atomic UPDATE in the database (migration 20261124000006) — a read-then-write here
+  // could overwrite a sale committed in between.
+  const { data, error } = await admin.rpc('adjust_stock', {
+    p_variant: variantId,
+    p_delta: delta,
+    p_reason: reason,
+    p_actor: actorId,
+  });
+  if (error) {
+    const m = error.message.match(/(WOULD_GO_BELOW_RESERVED|VARIANT_NOT_FOUND|INVALID_DELTA)/);
+    throw new Error(m ? m[0].toLowerCase() : error.message);
+  }
+  return { variantId, delta, stock: data as number };
 }
 
 async function couponCreate(

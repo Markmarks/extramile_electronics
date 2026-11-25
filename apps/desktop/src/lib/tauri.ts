@@ -59,3 +59,20 @@ export async function pinReset(): Promise<void> {
   if (!isTauri) return;
   await invoke('pin_reset');
 }
+
+/** Best-effort description of this PC for the admins' device list. */
+export function deviceDescription(): { label: string; os: string; appVersion: string } {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const os = /Windows/i.test(ua)
+    ? 'Windows'
+    : /Mac/i.test(ua)
+      ? 'macOS'
+      : /Linux/i.test(ua)
+        ? 'Linux'
+        : 'unknown';
+  return {
+    label: isTauri ? 'Back-office app' : 'Back-office (browser dev)',
+    os,
+    appVersion: import.meta.env.VITE_APP_VERSION ?? 'dev',
+  };
+}
