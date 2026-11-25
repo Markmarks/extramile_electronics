@@ -124,9 +124,11 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      # Pinned to the CLI in pnpm-lock.yaml (devDependency `supabase`). `latest` made an
+      # anonymous GitHub API call per run and failed on "rate limit exceeded".
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.110.0
       - name: Start local Supabase
         run: supabase start
       - name: Reset (reproduce schema + seed from scratch)
