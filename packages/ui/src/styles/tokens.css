@@ -36,10 +36,44 @@
   color-scheme: light;
 }
 
-/* Screen only: paper is always printed in the day palette, so a dark-mode device never
-   prints light text on white paper. */
+/*
+ * Night (Onyx). Applies when the device is in dark mode and the visitor hasn't picked Day,
+ * or when they picked Night (data-theme on <html>, set by the storefront's theme switch;
+ * the back-office never sets it, so it keeps following Windows). Screen only: paper is
+ * always printed in the day palette, so a dark device never prints light text on white.
+ * The two blocks must stay identical.
+ */
 @media screen and (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
+    /* Night: Onyx */
+    --background: 240 4% 5%; /* #0B0B0C */
+    --foreground: 40 19% 94%; /* #F2F0EC */
+    --card: 240 5% 9%; /* #151517 */
+    --card-foreground: 40 19% 94%;
+    --popover: 240 5% 9%;
+    --popover-foreground: 40 19% 94%;
+    --primary: 220 65% 81%; /* Ice Blue #AFC4EE */
+    --primary-foreground: 240 4% 5%;
+    --secondary: 240 5% 12%;
+    --secondary-foreground: 40 19% 94%;
+    --muted: 240 5% 12%;
+    --muted-foreground: 42 5% 63%; /* Stone #A6A39C */
+    --accent: 240 5% 12%;
+    --accent-foreground: 40 19% 94%;
+    --destructive: 5 100% 72%; /* #FF7A6E */
+    --destructive-foreground: 240 4% 5%;
+    --success: 145 52% 58%; /* #5CCB8A */
+    --success-foreground: 240 4% 5%;
+    --warning: 37 91% 55%; /* #F5A524 */
+    --warning-foreground: 240 4% 5%;
+    --logo-tile: 240 4% 14%; /* #232326 — lifts the tile off Onyx */
+    --border: 240 3% 17%; /* #2A2A2D */
+    --input: 240 3% 17%;
+    color-scheme: dark;
+  }
+}
+@media screen {
+  :root[data-theme='dark'] {
     /* Night: Onyx */
     --background: 240 4% 5%; /* #0B0B0C */
     --foreground: 40 19% 94%; /* #F2F0EC */
