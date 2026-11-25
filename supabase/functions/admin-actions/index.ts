@@ -4,6 +4,7 @@
 // is idempotency-keyed (outbox_receipts) and writes audit_log with source + device_id.
 // Non-staff are rejected 403 and the attempt is logged (test D-03).
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { planRefund } from '../_shared/refund-plan.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -28,7 +29,14 @@ function json(body: unknown, status = 200): Response {
 }
 
 // Actions only an admin (not staff) may perform.
-const ADMIN_ONLY = new Set(['role_change', 'staff_invite', 'device_revoke', 'device_restore']);
+// Refunds send money back to the customer, so they are admin-only too.
+const ADMIN_ONLY = new Set([
+  'role_change',
+  'staff_invite',
+  'device_revoke',
+  'device_restore',
+  'refund',
+]);
 
 // The back-office calls this from a webview, so the browser enforces CORS: it sends an
 // OPTIONS preflight first and drops the call unless the response allows the origin.
@@ -192,7 +200,14 @@ async function handle(
         String(p.to),
       );
     case 'refund':
-      return refund(admin, String(p.order_id), p.amount ? Number(p.amount) : null, actorId);
+      return refund(
+        admin,
+        String(p.order_id),
+        p.amount === undefined || p.amount === null ? null : Number(p.amount),
+        actorId,
+        typeof p.reason === 'string' && p.reason.trim() ? p.reason.trim().slice(0, 300) : null,
+        p.restock !== false,
+      );
     case 'role_change':
       return roleChange(admin, String(p.user_id), String(p.role));
     case 'device_revoke':
@@ -323,6 +338,8 @@ async function refund(
   orderId: string,
   amount: number | null,
   actorId: string,
+  reason: string | null = null,
+  restock = true,
 ): Promise<Record<string, unknown>> {
   const { data: orders } = await admin
     .from('orders')
@@ -341,7 +358,14 @@ async function refund(
   const payment = payments?.[0];
   if (!payment) throw new Error('no_paid_payment');
 
-  const refundAmount = amount ?? order.total;
+  // What has already gone back to the customer: a refund may never exceed what is left,
+  // and two partial refunds that add up to the total count as a full refund.
+  const { data: past } = await admin.from('refunds').select('amount').eq('order_id', orderId);
+  const alreadyRefunded = (past ?? []).reduce((n, r) => n + Number(r.amount), 0);
+  const plan = planRefund(Number(order.total), alreadyRefunded, amount);
+  if (!plan.ok) throw new Error(plan.error);
+  const refundAmount = plan.amount;
+  if (!PAYSTACK_SECRET) throw new Error('paystack_not_configured');
 
   // Paystack refund (subunit = pesewas).
   const res = await fetch('https://api.paystack.co/refund', {
@@ -351,25 +375,31 @@ async function refund(
   });
   if (!res.ok) throw new Error(`paystack_refund_${res.status}`);
 
-  await admin.from('refunds').insert({
+  const { error: insErr } = await admin.from('refunds').insert({
     order_id: orderId,
     payment_id: payment.id,
     amount: refundAmount,
+    reason,
     status: 'processing',
     actor: actorId,
   });
+  if (insErr) throw new Error(`refund_record_failed: ${insErr.message}`);
 
-  const full = refundAmount >= order.total;
-  await admin
+  const full = plan.full;
+  // The money has already gone back at this point, so a failure here must be loud (the
+  // refunds row above records it either way).
+  const { error: updErr } = await admin
     .from('orders')
     .update({
       payment_status: full ? 'refunded' : 'partially_refunded',
       status: full ? 'refunded' : undefined,
     })
     .eq('id', orderId);
+  if (updErr) throw new Error(`refunded_but_order_not_updated: ${updErr.message}`);
 
-  if (full) {
-    // Restore stock via inventory movements.
+  if (full && restock) {
+    // Goods came back: restore stock via inventory movements. (Skip with restock=false
+    // when the customer keeps the item, e.g. a goodwill refund.)
     const { data: items } = await admin
       .from('order_items')
       .select('variant_id, qty')

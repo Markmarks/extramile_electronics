@@ -1,3 +1,4 @@
+import { formatGHS } from '@extramile/core';
 import { refreshStorefront } from './storefront';
 import { supabase } from './supabase';
 import { deviceId } from './tauri';
@@ -59,5 +60,15 @@ function friendly(code: string): string {
   if (code === 'would_go_below_reserved')
     return 'Not saved — that is fewer than the units held for unpaid orders.';
   if (code === 'variant_not_found') return 'That variant no longer exists — reload.';
+  // refunds
+  if (code === 'already_refunded') return 'This order has already been refunded in full.';
+  if (code === 'invalid_amount') return 'Enter an amount above GH₵ 0.00.';
+  if (code.startsWith('exceeds_remaining:'))
+    return `That is more than is left to refund (${formatGHS(Number(code.split(':')[1]))}).`;
+  if (code === 'no_paid_payment') return 'No paid payment was found for this order.';
+  if (code === 'paystack_not_configured')
+    return 'Refunds are not set up yet: the Paystack secret key is missing on the server.';
+  if (code.startsWith('paystack_refund_'))
+    return `Paystack refused the refund (HTTP ${code.replace('paystack_refund_', '')}). Nothing was refunded.`;
   return code;
 }

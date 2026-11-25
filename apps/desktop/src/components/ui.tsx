@@ -39,6 +39,12 @@ const tones: Record<string, string> = {
   customer: 'bg-secondary text-muted-foreground',
   active: 'bg-success/10 text-success',
   revoked: 'bg-destructive/10 text-destructive',
+  off: 'bg-secondary text-muted-foreground',
+  scheduled: 'bg-sky-500/10 text-sky-600',
+  ended: 'bg-secondary text-muted-foreground',
+  'used up': 'bg-amber-500/15 text-amber-700',
+  published: 'bg-success/10 text-success',
+  hidden: 'bg-secondary text-muted-foreground',
 };
 
 /** Order / payment / role state as a small coloured label; unknown values fall back to grey. */
