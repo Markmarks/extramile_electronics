@@ -1,3 +1,4 @@
+import { refreshStorefront } from './storefront';
 import { supabase } from './supabase';
 import { deviceId } from './tauri';
 
@@ -24,9 +25,13 @@ export async function invokeAdminAction<T = Record<string, unknown>>(
     },
   });
   if (error) throw new Error(await serverMessage(error));
+  // Stock is shown on the shop ("Only 2 left", "Out of stock"), so refresh its cache.
+  if (STOCK_ACTIONS.has(action)) refreshStorefront();
   const body = data as { ok?: boolean; replay?: boolean; result?: T } | null;
   return (body?.result ?? ({} as T)) as T;
 }
+
+const STOCK_ACTIONS = new Set(['stock_adjust_large', 'refund']);
 
 /** supabase-js only says "non-2xx status code"; the function's JSON says why. */
 async function serverMessage(error: { message: string; context?: unknown }): Promise<string> {
@@ -51,5 +56,8 @@ function friendly(code: string): string {
   if (code.startsWith('INVALID_TRANSITION'))
     return `Not allowed: ${code.replace('INVALID_TRANSITION: ', '')}.`;
   if (code.startsWith('STALE')) return code.replace(/^STALE: /, 'Changed elsewhere: ');
+  if (code === 'would_go_below_reserved')
+    return 'Not saved — that is fewer than the units held for unpaid orders.';
+  if (code === 'variant_not_found') return 'That variant no longer exists — reload.';
   return code;
 }
