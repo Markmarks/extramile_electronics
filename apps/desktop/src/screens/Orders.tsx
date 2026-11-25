@@ -1,17 +1,34 @@
 import { formatGHS, type OrderStatus } from '@extramile/core';
-import { Check, Inbox, Printer, RefreshCw, ScanLine, X } from 'lucide-react';
+import {
+  Check,
+  Inbox,
+  MapPin,
+  Phone,
+  Printer,
+  RefreshCw,
+  RotateCcw,
+  ScanLine,
+  Search,
+  X,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../auth/AuthProvider';
+import { cedisInputToPesewas, Field, Modal, pesewasToInput } from '../components/Modal';
 import { SerialCapture } from '../components/SerialCapture';
 import { EmptyState, Notice, PageHeader, StatusBadge } from '../components/ui';
 import { useConnectivity } from '../hooks/useConnectivity';
 import {
   captureSerials,
+  formatAddress,
   getOrderDetail,
   listOpenOrders,
+  refundOrder,
+  searchOrders,
   transitionOrder,
   type OrderDetail,
   type OrderRow,
 } from '../lib/orders';
+import { isPreview } from '../lib/preview';
 import { printReceipt, type ReceiptDto } from '../lib/print';
 
 const NEXT: Record<string, OrderStatus | null> = {
@@ -37,6 +54,11 @@ function ago(iso: string): string {
 
 export function Orders() {
   const online = useConnectivity();
+  const { role: authRole } = useAuth();
+  const isAdmin = (authRole ?? (isPreview ? 'admin' : null)) === 'admin';
+  const [refunding, setRefunding] = useState(false);
+  const [search, setSearch] = useState('');
+  const [found, setFound] = useState<OrderRow[] | null>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
@@ -48,9 +70,14 @@ export function Orders() {
   );
 
   const visible = useMemo(
-    () => (filter === 'all' ? orders : orders.filter((o) => o.status === filter)),
-    [orders, filter],
+    () => found ?? (filter === 'all' ? orders : orders.filter((o) => o.status === filter)),
+    [orders, filter, found],
   );
+
+  async function runSearch(e: React.FormEvent) {
+    e.preventDefault();
+    setFound(search.trim() ? await searchOrders(search) : null);
+  }
 
   const refresh = useCallback(async () => {
     const list = await listOpenOrders();
@@ -132,6 +159,28 @@ export function Orders() {
     }
   }
 
+  async function doRefund(amount: number | null, reason: string, restock: boolean) {
+    if (!detail) return;
+    setMessage(null);
+    try {
+      const r = await refundOrder(detail.id, amount, reason, restock);
+      setRefunding(false);
+      setMessage({
+        tone: 'ok',
+        text: `Refunded ${formatGHS(r.refundAmount)}${r.full ? ' — order fully refunded' : ''}.`,
+      });
+      await refresh();
+    } catch (err) {
+      setRefunding(false);
+      setMessage({ tone: 'error', text: err instanceof Error ? err.message : 'Refund failed.' });
+    }
+  }
+
+  const canRefund =
+    !!detail &&
+    isAdmin &&
+    (detail.payment_status === 'paid' || detail.payment_status === 'partially_refunded') &&
+    detail.refundable > 0;
   const next = detail ? NEXT[detail.status] : null;
   const missingSerials = detail?.items.filter((it) => it.serials.length < it.qty).length ?? 0;
 
@@ -154,7 +203,38 @@ export function Orders() {
           tabIndex={0}
           onKeyDown={onKeyDown}
         >
-          <div className="flex gap-1 border-b p-2">
+          <form className="relative border-b p-2" onSubmit={(e) => void runSearch(e)}>
+            <Search
+              className="pointer-events-none absolute left-4.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <input
+              className="input pl-8"
+              placeholder="Find any order: number, email or phone"
+              aria-label="Find an order"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                if (!e.target.value.trim()) setFound(null);
+              }}
+            />
+          </form>
+          {found && (
+            <p className="flex items-center justify-between border-b px-3 py-1.5 text-xs text-muted-foreground">
+              {found.length} match{found.length === 1 ? '' : 'es'}, all statuses
+              <button
+                type="button"
+                className="btn-ghost h-6 px-2 text-xs"
+                onClick={() => {
+                  setFound(null);
+                  setSearch('');
+                }}
+              >
+                Back to queue
+              </button>
+            </p>
+          )}
+          <div className={`flex gap-1 border-b p-2 ${found ? 'hidden' : ''}`}>
             {FILTERS.map((f) => {
               const count =
                 f.id === 'all' ? orders.length : orders.filter((o) => o.status === f.id).length;
@@ -239,6 +319,76 @@ export function Orders() {
                 </div>
               </div>
 
+              {/* Delivery — where and to whom this goes */}
+              <div className="grid gap-4 border-b p-5 sm:grid-cols-2">
+                <div>
+                  <p className="card-title mb-1.5 flex items-center gap-1.5">
+                    <MapPin className="size-3.5" aria-hidden /> Deliver to
+                  </p>
+                  {formatAddress(detail.ship_to).length ? (
+                    <address className="not-italic leading-relaxed">
+                      {formatAddress(detail.ship_to).map((line, i) => (
+                        <span key={i} className={`block ${i === 0 ? 'font-medium' : ''}`}>
+                          {line}
+                        </span>
+                      ))}
+                    </address>
+                  ) : (
+                    <p className="text-muted-foreground">No address recorded.</p>
+                  )}
+                  <p className="mt-1.5 flex items-center gap-1.5">
+                    <Phone className="size-3.5 text-muted-foreground" aria-hidden />
+                    <a
+                      className="font-medium text-primary"
+                      href={`tel:${detail.ship_to.phone ?? detail.phone}`}
+                    >
+                      {detail.ship_to.phone ?? detail.phone}
+                    </a>
+                    {detail.ship_to.phone && detail.ship_to.phone !== detail.phone && (
+                      <span className="text-xs text-muted-foreground">(buyer {detail.phone})</span>
+                    )}
+                  </p>
+                  {detail.notes && (
+                    <p className="mt-2 rounded-lg bg-amber-500/10 px-3 py-2 text-[13px] text-amber-800">
+                      Note: {detail.notes}
+                    </p>
+                  )}
+                </div>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px]">
+                  <dt className="text-muted-foreground">Delivery zone</dt>
+                  <dd className="text-right">
+                    {detail.zone
+                      ? `${detail.zone.name} · ${detail.zone.eta_days_min}–${detail.zone.eta_days_max} days`
+                      : '—'}
+                  </dd>
+                  <dt className="text-muted-foreground">Items</dt>
+                  <dd className="text-right tabular-nums">{formatGHS(detail.subtotal)}</dd>
+                  <dt className="text-muted-foreground">Delivery fee</dt>
+                  <dd className="text-right tabular-nums">
+                    {detail.shipping_fee ? formatGHS(detail.shipping_fee) : 'Free'}
+                  </dd>
+                  {detail.discount > 0 && (
+                    <>
+                      <dt className="text-muted-foreground">
+                        Discount{detail.coupon_code ? ` (${detail.coupon_code})` : ''}
+                      </dt>
+                      <dd className="text-right tabular-nums">−{formatGHS(detail.discount)}</dd>
+                    </>
+                  )}
+                  <dt className="font-medium">Total</dt>
+                  <dd className="text-right font-medium tabular-nums">{formatGHS(detail.total)}</dd>
+                  {detail.refunds.map((r) => (
+                    <div key={r.id} className="contents text-destructive">
+                      <dt>
+                        Refunded {new Date(r.created_at).toLocaleDateString()}
+                        {r.reason ? ` · ${r.reason}` : ''}
+                      </dt>
+                      <dd className="text-right tabular-nums">−{formatGHS(r.amount)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
               <table className="table">
                 <thead>
                   <tr>
@@ -255,7 +405,9 @@ export function Orders() {
                       <tr key={it.id}>
                         <td>
                           <p className="font-medium">{it.title}</p>
-                          <p className="text-[11px] text-muted-foreground">SKU {it.sku}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            SKU {it.sku} · {formatGHS(it.unit_price)} each
+                          </p>
                         </td>
                         <td className="text-right tabular-nums">{it.qty}</td>
                         <td>
@@ -309,6 +461,17 @@ export function Orders() {
                   >
                     <Printer className="size-4" aria-hidden /> Print receipt
                   </button>
+                  {canRefund && (
+                    <button
+                      type="button"
+                      className="btn-secondary btn-lg text-destructive"
+                      onClick={() => setRefunding(true)}
+                      disabled={!online}
+                      title={online ? undefined : 'Refunds need a connection'}
+                    >
+                      <RotateCcw className="size-4" aria-hidden /> Refund…
+                    </button>
+                  )}
                 </div>
                 {message && <Notice tone={message.tone}>{message.text}</Notice>}
               </div>
@@ -316,6 +479,16 @@ export function Orders() {
           )}
         </section>
       </div>
+
+      {refunding && detail && (
+        <Modal title={`Refund ${detail.order_number}`} onClose={() => setRefunding(false)}>
+          <RefundForm
+            refundable={detail.refundable}
+            total={detail.total}
+            onSubmit={(amount, reason, restock) => void doRefund(amount, reason, restock)}
+          />
+        </Modal>
+      )}
 
       {capturingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6 backdrop-blur-sm">
@@ -338,5 +511,115 @@ export function Orders() {
         </div>
       )}
     </div>
+  );
+}
+
+function RefundForm({
+  refundable,
+  total,
+  onSubmit,
+}: {
+  refundable: number;
+  total: number;
+  onSubmit: (amountPesewas: number | null, reason: string, restock: boolean) => void;
+}) {
+  const [full, setFull] = useState(true);
+  const [amount, setAmount] = useState(pesewasToInput(refundable));
+  const [reason, setReason] = useState('');
+  const [restock, setRestock] = useState(true);
+  const [confirm, setConfirm] = useState(false);
+  const pesewas = full ? refundable : cedisInputToPesewas(amount);
+  const valid =
+    pesewas !== null && pesewas > 0 && pesewas <= refundable && reason.trim().length > 1;
+
+  return (
+    <form
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!valid) return;
+        if (!confirm) return setConfirm(true);
+        onSubmit(full ? null : pesewas, reason.trim(), restock);
+      }}
+    >
+      <p className="text-muted-foreground">
+        Order total {formatGHS(total)} · left to refund{' '}
+        <span className="font-medium text-foreground">{formatGHS(refundable)}</span>. The money goes
+        back to the customer through Paystack.
+      </p>
+      <div className="inline-flex rounded-lg border bg-secondary/50 p-0.5" role="radiogroup">
+        {[
+          { v: true, l: 'Everything left' },
+          { v: false, l: 'Part of it' },
+        ].map((o) => (
+          <button
+            key={o.l}
+            type="button"
+            role="radio"
+            aria-checked={full === o.v}
+            onClick={() => {
+              setFull(o.v);
+              setConfirm(false);
+            }}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+              full === o.v ? 'bg-card shadow-sm' : 'text-muted-foreground'
+            }`}
+          >
+            {o.l}
+          </button>
+        ))}
+      </div>
+      {!full && (
+        <Field label="Amount (GH₵)" hint={`Up to ${formatGHS(refundable)}`}>
+          <input
+            className="input"
+            type="number"
+            min={0.01}
+            step="0.01"
+            max={refundable / 100}
+            value={amount}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              setConfirm(false);
+            }}
+          />
+        </Field>
+      )}
+      <Field label="Reason" hint="Kept with the refund; staff see it on the order.">
+        <input
+          className="input"
+          placeholder="e.g. Faulty on arrival, customer returned it"
+          value={reason}
+          maxLength={300}
+          onChange={(e) => setReason(e.target.value)}
+        />
+      </Field>
+      {(full || pesewas === refundable) && (
+        <label className="flex items-start gap-2 text-[13px]">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={restock}
+            onChange={(e) => setRestock(e.target.checked)}
+          />
+          <span>
+            Put the items back in stock
+            <span className="block text-[11px] text-muted-foreground">
+              Untick if the customer keeps the goods (goodwill refund).
+            </span>
+          </span>
+        </label>
+      )}
+      {confirm && valid && (
+        <Notice tone="error">
+          Refund {formatGHS(pesewas)} to the customer? This sends money and cannot be undone.
+        </Notice>
+      )}
+      <div className="flex justify-end">
+        <button type="submit" className="btn-primary" disabled={!valid}>
+          {confirm ? `Yes, refund ${formatGHS(pesewas ?? 0)}` : 'Review refund'}
+        </button>
+      </div>
+    </form>
   );
 }

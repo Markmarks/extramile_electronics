@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_ANON_KEY: string;
   /** Storefront base URL for cache refreshes; defaults to https://www.dnvmart.com. */
   readonly VITE_STOREFRONT_URL?: string;
+  /** Set from package.json by vite.config.ts. */
+  readonly VITE_APP_VERSION: string;
 }
 
 interface ImportMeta {

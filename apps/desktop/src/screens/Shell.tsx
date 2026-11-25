@@ -3,6 +3,10 @@ import {
   KeyRound,
   LayoutDashboard,
   Lock,
+  MessageSquare,
+  TicketPercent,
+  Truck,
+  UserRound,
   type LucideIcon,
   Package,
   ShoppingBag,
@@ -15,12 +19,25 @@ import { OfflineBanner } from '../components/OfflineBanner';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { isPreview } from '../lib/preview';
 import { Catalogue } from './Catalogue';
+import { Coupons } from './Coupons';
+import { Customers } from './Customers';
+import { Delivery } from './Delivery';
+import { Reviews } from './Reviews';
 import { Dashboard } from './Dashboard';
 import { Inventory } from './Inventory';
 import { Orders } from './Orders';
 import { Users } from './Users';
 
-export type View = 'home' | 'orders' | 'catalogue' | 'inventory' | 'users';
+export type View =
+  | 'home'
+  | 'orders'
+  | 'catalogue'
+  | 'inventory'
+  | 'delivery'
+  | 'coupons'
+  | 'reviews'
+  | 'customers'
+  | 'users';
 
 export function Shell() {
   const { user, role: authRole, lock } = useAuth();
@@ -34,6 +51,10 @@ export function Shell() {
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'catalogue', label: 'Catalogue', icon: Package },
     { id: 'inventory', label: 'Inventory', icon: Boxes },
+    { id: 'customers', label: 'Customers', icon: UserRound },
+    { id: 'reviews', label: 'Reviews', icon: MessageSquare },
+    { id: 'coupons', label: 'Coupons', icon: TicketPercent },
+    { id: 'delivery', label: 'Delivery', icon: Truck },
     ...(role === 'admin' ? [{ id: 'users' as const, label: 'Users', icon: UsersIcon }] : []),
   ];
   const email = user?.email ?? (isPreview ? 'preview@extramile.local' : '');
@@ -118,6 +139,10 @@ export function Shell() {
           {view === 'orders' && <Orders />}
           {view === 'catalogue' && <Catalogue />}
           {view === 'inventory' && <Inventory />}
+          {view === 'customers' && <Customers isAdmin={role === 'admin'} />}
+          {view === 'reviews' && <Reviews />}
+          {view === 'coupons' && <Coupons isAdmin={role === 'admin'} />}
+          {view === 'delivery' && <Delivery isAdmin={role === 'admin'} />}
           {view === 'users' && role === 'admin' && <Users />}
         </main>
       </div>
