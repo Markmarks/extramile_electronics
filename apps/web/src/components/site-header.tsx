@@ -2,6 +2,7 @@ import { Logo } from '@extramile/ui';
 import { Package, Search, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { CartCount } from '@/components/cart/cart-count';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const navItem =
   'pressable relative flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-medium text-foreground/80 transition-colors hover:bg-foreground/5 hover:text-foreground';
@@ -28,6 +29,7 @@ export function SiteHeader() {
             <span className="hidden sm:inline">Cart</span>
             <CartCount />
           </Link>
+          <ThemeToggle className={navItem} />
         </nav>
       </div>
     </header>

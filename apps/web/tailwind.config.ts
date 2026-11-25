@@ -9,8 +9,15 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const glob = (p: string) => path.resolve(here, p).replace(/\\/g, '/');
 
 const config: Config = {
-  // Night (Onyx) follows the device setting; tokens switch in packages/ui tokens.css.
-  darkMode: 'media',
+  // Night (Onyx): the device is dark and the visitor hasn't picked Day, or they picked Night.
+  // Mirrors the token rules in packages/ui tokens.css (screen only, so print stays light).
+  darkMode: [
+    'variant',
+    [
+      "@media screen and (prefers-color-scheme: dark) { &:not([data-theme='light'] *) }",
+      "@media screen { &:is([data-theme='dark'] *) }",
+    ],
+  ],
   content: [
     glob('src/**/*.{ts,tsx}'),
     // Shared components live in packages/ui — scan them so their classes are emitted.
