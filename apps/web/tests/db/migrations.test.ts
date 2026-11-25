@@ -184,6 +184,69 @@ describe('stock adjustments (adjust_stock)', () => {
     expect((await variantCounts(db, variantId)).stock).toBe(start + 5 - 1 - 2);
   });
 
+  it('staff cannot write stock or reserved directly — only adjust_stock can', async () => {
+    const { variantId } = await createPendingOrder(db, 1);
+    const before = await variantCounts(db, variantId);
+    for (const sql of [
+      `update product_variants set stock = 999 where id = $1`,
+      `update product_variants set reserved = 0 where id = $1`,
+    ]) {
+      await expect(
+        as(db, 'authenticated', staff, (tx) => tx.query(sql, [variantId])),
+      ).rejects.toThrow(/permission denied/);
+    }
+    expect(await variantCounts(db, variantId)).toEqual(before);
+  });
+
+  it('staff can still edit price and visibility, and add a variant with no stock', async () => {
+    const { variantId } = await createPendingOrder(db, 1);
+    const res = await as(db, 'authenticated', staff, (tx) =>
+      tx.query(`update product_variants set price = 123400, is_active = true where id = $1`, [
+        variantId,
+      ]),
+    );
+    expect(res.affectedRows).toBe(1);
+    const { rows: p } = await db.query<{ product_id: string }>(
+      `select product_id from product_variants where id = $1`,
+      [variantId],
+    );
+    const ins = await as(db, 'authenticated', staff, (tx) =>
+      tx.query<{ stock: number; reserved: number }>(
+        `insert into product_variants (product_id, sku, price) values ($1, 'NEW-SKU-1', 5000)
+         returning stock, reserved`,
+        [p[0]!.product_id],
+      ),
+    );
+    expect(ins.rows[0]).toEqual({ stock: 0, reserved: 0 });
+    await expect(
+      as(db, 'authenticated', staff, (tx) =>
+        tx.query(
+          `insert into product_variants (product_id, sku, price, stock) values ($1, 'NEW-SKU-2', 5000, 7)`,
+          [p[0]!.product_id],
+        ),
+      ),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it('the stock log is read-only for signed-in staff', async () => {
+    const { variantId } = await createPendingOrder(db, 1);
+    await expect(
+      as(db, 'authenticated', staff, (tx) =>
+        tx.query(
+          `insert into inventory_movements (variant_id, delta, reason) values ($1, 5, 'x')`,
+          [variantId],
+        ),
+      ),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      as(db, 'authenticated', staff, (tx) => tx.query(`delete from inventory_movements`)),
+    ).rejects.toThrow(/permission denied/);
+    const { rows } = await as(db, 'authenticated', staff, (tx) =>
+      tx.query<{ n: number }>(`select count(*)::int n from inventory_movements`),
+    );
+    expect(rows[0]!.n).toBeGreaterThanOrEqual(0);
+  });
+
   it('is server-only', async () => {
     const { variantId } = await createPendingOrder(db);
     await expect(

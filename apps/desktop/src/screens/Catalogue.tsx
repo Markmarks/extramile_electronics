@@ -230,9 +230,14 @@ export function Catalogue() {
               onAddVariant={(sku, price, stock) =>
                 report(() => createVariant(selected.id, sku, price, stock), 'Variant added.')()
               }
-              onSaveVariant={(id, price, stock) =>
-                report(() => updateVariant(id, { priceCedis: price, stock }), 'Variant saved.')()
-              }
+              onSaveVariant={(id, price, stock) => {
+                // The count shown when the editor opened; the server applies the difference.
+                const previous = selected.variants.find((v) => v.id === id)?.stock ?? stock;
+                void report(
+                  () => updateVariant(id, { priceCedis: price, stock: { previous, next: stock } }),
+                  'Variant saved.',
+                )();
+              }}
               onToggleVariant={(id, active) =>
                 report(() => updateVariant(id, { is_active: active }))()
               }

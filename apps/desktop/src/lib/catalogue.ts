@@ -6,6 +6,7 @@ import {
   type ProductCondition,
   type SpecValue,
 } from '@extramile/core';
+import { invokeAdminAction } from './adminActions';
 import { refreshStorefront } from './storefront';
 import { supabase } from './supabase';
 
@@ -230,31 +231,51 @@ export async function createProduct(p: NewProduct): Promise<string> {
   return id;
 }
 
+/**
+ * Stock never changes by writing `product_variants.stock` (signed-in users have no
+ * UPDATE on it — migration 20261125000001). It goes through admin-actions →
+ * adjust_stock(): one atomic `stock = stock + delta` that refuses to drop below the
+ * units reserved for unpaid orders and writes the inventory_movements log. A sale
+ * committed while this screen was open is therefore kept, not overwritten.
+ */
+async function moveStock(variantId: string, delta: number, reason: string): Promise<void> {
+  if (delta === 0) return;
+  await invokeAdminAction('stock_adjust_large', { variant_id: variantId, delta, reason });
+}
+
 export async function createVariant(
   productId: string,
   sku: string,
   priceCedis: number,
   stock: number,
 ): Promise<void> {
-  const { error } = await supabase.from('product_variants').insert({
-    product_id: productId,
-    sku,
-    price: cedisToPesewas(priceCedis),
-    stock,
-  });
+  const { data, error } = await supabase
+    .from('product_variants')
+    .insert({ product_id: productId, sku, price: cedisToPesewas(priceCedis) })
+    .select('id')
+    .returns<{ id: string }[]>();
   if (error) throw new Error(error.message);
+  const id = data?.[0]?.id;
+  if (!id) throw new Error(NOT_SAVED);
   refreshStorefront();
+  // Opening stock is logged as received goods.
+  await moveStock(id, stock, 'purchase');
 }
 
 export async function updateVariant(
   id: string,
-  patch: { priceCedis?: number; stock?: number; is_active?: boolean },
+  patch: {
+    priceCedis?: number;
+    is_active?: boolean;
+    /** New on-hand count, applied as (stock − previousStock) so concurrent sales survive. */
+    stock?: { previous: number; next: number };
+  },
 ): Promise<void> {
-  const row: { price?: number; stock?: number; is_active?: boolean } = {};
+  const row: VariantPatch = {};
   if (patch.priceCedis !== undefined) row.price = cedisToPesewas(patch.priceCedis);
-  if (patch.stock !== undefined) row.stock = patch.stock;
   if (patch.is_active !== undefined) row.is_active = patch.is_active;
-  await updateVariantRow(id, row);
+  if (Object.keys(row).length) await updateVariantRow(id, row);
+  if (patch.stock) await moveStock(id, patch.stock.next - patch.stock.previous, 'adjust');
 }
 
 export async function setProductActive(id: string, isActive: boolean): Promise<void> {

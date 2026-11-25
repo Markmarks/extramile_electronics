@@ -56,5 +56,8 @@ function friendly(code: string): string {
   if (code.startsWith('INVALID_TRANSITION'))
     return `Not allowed: ${code.replace('INVALID_TRANSITION: ', '')}.`;
   if (code.startsWith('STALE')) return code.replace(/^STALE: /, 'Changed elsewhere: ');
+  if (code === 'would_go_below_reserved')
+    return 'Not saved — that is fewer than the units held for unpaid orders.';
+  if (code === 'variant_not_found') return 'That variant no longer exists — reload.';
   return code;
 }

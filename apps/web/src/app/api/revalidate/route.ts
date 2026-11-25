@@ -14,6 +14,10 @@ export const dynamic = 'force-dynamic';
  *
  * Auth: the caller's Supabase access token (Authorization: Bearer …) must belong to a
  * staff or admin profile. No shared secret is needed. The only effect is a cache refresh.
+ *
+ * Input (README rule 7): the route reads no body, query or params — only the
+ * Authorization header, matched against /^Bearer (.+)$/ and then verified by
+ * supabase.auth.getUser() (rule 3). There is nothing for a Zod schema to parse.
  */
 
 // Same origins as the admin-actions Edge Function: the Tauri webview on Windows
