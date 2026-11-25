@@ -17,7 +17,11 @@ function walk(dir: string): string[] {
 }
 
 describe.skipIf(!existsSync(STATIC_DIR))('S-11: no server secrets in the client bundle', () => {
-  const files = walk(STATIC_DIR).filter((f) => /\.(js|mjs|map)$/.test(f));
+  // describe.skipIf still runs this body while collecting tests, so guard the walk itself
+  // (otherwise an unbuilt tree throws ENOENT instead of skipping).
+  const files = existsSync(STATIC_DIR)
+    ? walk(STATIC_DIR).filter((f) => /\.(js|mjs|map)$/.test(f))
+    : [];
 
   it('contains no Paystack secret-key patterns', () => {
     const offenders = files.filter((f) =>

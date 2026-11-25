@@ -43,11 +43,12 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Unit + integration tests (coverage gates)
-        run: pnpm -r test
-
+      # Build first: tests/security/bundle.test.ts scans the built .next output (S-11).
       - name: Build
         run: pnpm build
+
+      - name: Unit + integration tests (coverage gates)
+        run: pnpm -r test
 
       - name: Scan client bundle for leaked secrets (S-11)
         run: node scripts/scan-bundle-secrets.mjs apps/web/.next
