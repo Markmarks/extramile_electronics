@@ -36,7 +36,9 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
+/* Screen only: paper is always printed in the day palette, so a dark-mode device never
+   prints light text on white paper. */
+@media screen and (prefers-color-scheme: dark) {
   :root {
     /* Night: Onyx */
     --background: 240 4% 5%; /* #0B0B0C */

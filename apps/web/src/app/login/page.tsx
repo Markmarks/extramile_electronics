@@ -1,3 +1,4 @@
+import { LogoMark } from '@extramile/ui';
 import type { Metadata } from 'next';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { EmailAuthForm } from '@/components/auth/email-auth-form';
@@ -23,9 +24,7 @@ export default async function LoginPage({
     <main className="container flex min-h-[calc(100dvh-3.5rem)] items-center justify-center py-12">
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-3 text-center">
-          <span className="mx-auto flex size-16 items-center justify-center rounded-xl bg-foreground text-2xl font-bold text-background">
-            E
-          </span>
+          <LogoMark className="mx-auto h-14" />
           <h1 className="text-2xl font-semibold">Sign in</h1>
           <p className="text-[15px] text-muted-foreground">Track orders and check out faster.</p>
         </div>

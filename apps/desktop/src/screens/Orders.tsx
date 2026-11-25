@@ -144,12 +144,27 @@ export function Orders() {
 
   async function print() {
     if (!detail) return;
+    // Thermal receipt in the brand voice (docs/brand §08). ESC/POS prints each line feed as
+    // a new line, so the footer carries serials and warranty per item.
+    const footer = [
+      ...detail.items.flatMap((i) => [
+        ...(i.serials.length ? [`${i.sku} IMEI/Serial ${i.serials.join(', ')}`] : []),
+        ...(i.warranty_months > 0 ? [`${i.sku} ${i.warranty_months}-month warranty`] : []),
+      ]),
+      '',
+      'Keep this receipt. It is your warranty record.',
+      'ExtraMile Electronics, Accra',
+    ].join('\n');
     const dto: ReceiptDto = {
-      header: 'ExtraMile Electronics',
+      header: 'extramile',
       order_number: detail.order_number,
-      lines: detail.items.map((i) => ({ name: i.title, qty: i.qty, line_total: '' })),
+      lines: detail.items.map((i) => ({
+        name: i.title,
+        qty: i.qty,
+        line_total: formatGHS(i.line_total),
+      })),
       total: formatGHS(detail.total),
-      warranty: 'Warranty per product terms',
+      warranty: footer,
     };
     try {
       const path = await printReceipt(dto, 'Spool file (default)');

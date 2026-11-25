@@ -9,7 +9,7 @@ const navItem =
 /** Static header — no cookies here, so pages keep their static/ISR rendering. */
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b bg-background">
+    <header className="sticky top-0 z-40 border-b bg-background print:hidden">
       <div className="container flex h-14 items-center justify-between gap-4">
         <Link href="/" aria-label="ExtraMile Electronics home" className="text-[19px]">
           <Logo markClassName="h-7" />
