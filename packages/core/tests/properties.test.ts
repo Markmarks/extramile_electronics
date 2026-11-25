@@ -1,3 +1,4 @@
+/// <reference types="node" /> // the tests (not src) use process.env and Buffer
 /**
  * Property tests: rules that must hold for *every* input, not just the hand-picked
  * examples in the other test files. fast-check generates the inputs and shrinks any

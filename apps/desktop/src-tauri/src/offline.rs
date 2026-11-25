@@ -88,6 +88,11 @@ pub fn cache_put(db: State<Db>, table: String, rows: Vec<Value>) -> Result<usize
 /// Read-only, parameterless query over the cache. Rejects anything but a single SELECT.
 #[tauri::command]
 pub fn cache_query(db: State<Db>, sql: String) -> Result<Vec<Value>, String> {
+    let conn = db.0.lock().map_err(|e| e.to_string())?;
+    run_cache_query(&conn, &sql)
+}
+
+fn run_cache_query(conn: &Connection, sql: &str) -> Result<Vec<Value>, String> {
     let head = sql.trim_start().to_lowercase();
     if !(head.starts_with("select") || head.starts_with("with")) {
         return Err("cache_query: only SELECT statements are allowed".into());
@@ -95,9 +100,13 @@ pub fn cache_query(db: State<Db>, sql: String) -> Result<Vec<Value>, String> {
     if sql.trim_end().trim_end_matches(';').contains(';') {
         return Err("cache_query: a single statement only".into());
     }
-    let conn = db.0.lock().map_err(|e| e.to_string())?;
-    let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
-    let cols: Vec<String> = stmt.column_names().iter().map(|s| s.to_string()).collect();
+    let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
+    // The prefix check alone lets `WITH x AS (SELECT 1) DELETE FROM outbox` through.
+    // Ask SQLite itself whether the compiled statement writes (docs/08-SECURITY D-06).
+    if !stmt.readonly() {
+        return Err("cache_query: only SELECT statements are allowed".into());
+    }
+    let cols: Vec<String> = stmt.column_names().map(|s| s.to_string()).collect();
     let rows = stmt
         .query_map([], |row| {
             let mut obj = serde_json::Map::new();
@@ -182,4 +191,60 @@ pub fn outbox_mark(db: State<Db>, id: i64, ok: bool, error: Option<String>) -> R
         .map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn db() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(SCHEMA).unwrap();
+        conn.execute(
+            "insert into outbox(kind, payload, idempotency_key) values ('stock_adjust', '{}', 'k1')",
+            [],
+        )
+        .unwrap();
+        conn
+    }
+
+    fn outbox_rows(conn: &Connection) -> i64 {
+        conn.query_row("select count(*) from outbox", [], |r| r.get(0)).unwrap()
+    }
+
+    #[test]
+    fn allows_plain_and_cte_selects() {
+        let conn = db();
+        assert_eq!(run_cache_query(&conn, "select kind from outbox").unwrap().len(), 1);
+        let cte = "with o as (select kind from outbox) select * from o;";
+        assert_eq!(run_cache_query(&conn, cte).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn rejects_writes_hidden_behind_with() {
+        let conn = db();
+        for sql in [
+            "with x as (select 1) delete from outbox",
+            "with x as (select 1) update outbox set status = 'done'",
+            "with x as (select 1) insert into outbox(kind, payload, idempotency_key) values ('a','{}','k2')",
+        ] {
+            assert!(run_cache_query(&conn, sql).is_err(), "should reject: {sql}");
+        }
+        assert_eq!(outbox_rows(&conn), 1);
+    }
+
+    #[test]
+    fn rejects_non_select_and_stacked_statements() {
+        let conn = db();
+        for sql in [
+            "delete from outbox",
+            "attach database ':memory:' as x",
+            "pragma writable_schema = on",
+            "select 1; delete from outbox",
+            "  DROP TABLE outbox",
+        ] {
+            assert!(run_cache_query(&conn, sql).is_err(), "should reject: {sql}");
+        }
+        assert_eq!(outbox_rows(&conn), 1);
+    }
 }

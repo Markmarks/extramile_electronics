@@ -6,6 +6,7 @@ export default tseslint.config(
   {
     ignores: [
       '**/node_modules/**',
+      '.claude/worktrees/**', // other sessions' checkouts, linted in their own runs
       '**/dist/**',
       '**/.next/**',
       '**/out/**',

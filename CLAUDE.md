@@ -13,6 +13,12 @@ touching pricing, auth, payments or migrations.
 - Put `Verified: <how>` (or `Verified: none — <reason>`) in every commit message body.
   A commit gate hook (`.claude/hooks/commit-gate.mjs`) checks this; its mode is in
   `.claude/verify-gate.json`.
+- Changes to auth, payments/checkout, server actions or API routes, migrations/RLS, Edge
+  Functions or Tauri commands/config also need the `security` skill
+  (`.claude/skills/security/SKILL.md`): `pnpm security`, `pnpm security:audit`, then an
+  abuse-case pass. Threat model + test IDs: `docs/08-SECURITY.md`. Only probe localhost or
+  staging, never production. The repo is public, so don't describe an unfixed
+  vulnerability in a commit, PR or doc.
 - A check still failing after three fix rounds → stop and hand it to the user with the
   error, what you tried and your best guess.
 - Never make a check pass by weakening it: no `.skip`, sleeps, retries, wider timeouts

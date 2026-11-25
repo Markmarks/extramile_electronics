@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
  * (docs/03-SDLC.md §3). Always returns 200 so it can run on a fresh checkout;
  * the `db` field reports whether the database is reachable/configured.
  */
+// security-guard: no-input — public liveness probe, takes no input.
 export async function GET() {
   // This endpoint is public: never echo raw error messages. Driver/runtime errors can
   // contain env values (e.g. an invalid header value that *is* the service-role key).

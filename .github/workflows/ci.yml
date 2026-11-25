@@ -56,6 +56,57 @@ jobs:
       - name: Scan desktop webview bundle for leaked secrets (D-01)
         run: node scripts/scan-bundle-secrets.mjs apps/desktop/dist
 
+  # ── Vulnerability testing (docs/08-SECURITY.md §6) ────────────────────────────
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # Semgrep results → Security → Code scanning
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # No cache: this job never runs pnpm install, so there is no store to save.
+
+      - name: Security guard — README rules + Tauri hardening (G-01..G-13)
+        run: node scripts/security-guard.mjs
+
+      - name: Security guard self-test (each check catches a planted violation)
+        run: node --test scripts/security-guard.test.mjs
+
+      - name: npm dependency audit (A-01, high and above)
+        run: pnpm audit --audit-level=high
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: Rust dependency audit (A-02)
+        working-directory: apps/desktop/src-tauri
+        run: cargo audit
+
+      # Community rules for TS/React/Next/Rust/secrets. Blocking: the first baseline
+      # (2026-11-25, 123 rules, 294 files) had 0 findings. Results also go to the Security tab.
+      - name: Semgrep
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep semgrep scan \
+            --config p/typescript --config p/react --config p/nextjs \
+            --config p/rust --config p/secrets \
+            --exclude node_modules --exclude .next --exclude dist --exclude target \
+            --sarif --output semgrep.sarif --metrics off --error
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('semgrep.sarif') != ''
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
   # ── Database: schema reproduces from scratch + lint + RLS suite (SDLC §3 5-6) ─
   # Enabled from phase P2 once supabase/migrations exist.
   database:
@@ -73,9 +124,11 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      # Pinned to the CLI in pnpm-lock.yaml (devDependency `supabase`). `latest` made an
+      # anonymous GitHub API call per run and failed on "rate limit exceeded".
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.110.0
       - name: Start local Supabase
         run: supabase start
       - name: Reset (reproduce schema + seed from scratch)
