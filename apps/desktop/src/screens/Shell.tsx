@@ -1,3 +1,4 @@
+import { Logo } from '@extramile/ui';
 import {
   Boxes,
   KeyRound,
@@ -63,14 +64,8 @@ export function Shell() {
     <div className="flex h-full">
       {/* Sidebar */}
       <aside className="flex w-56 shrink-0 flex-col border-r bg-card">
-        <div className="flex h-14 items-center gap-2.5 border-b px-4">
-          <span className="flex size-7 items-center justify-center rounded-md bg-foreground text-xs font-bold text-background">
-            E
-          </span>
-          <div className="leading-tight">
-            <p className="text-[13px] font-semibold">ExtraMile</p>
-            <p className="text-[11px] text-muted-foreground">Back-office</p>
-          </div>
+        <div className="flex h-14 items-center border-b px-4">
+          <Logo descriptor="Back-office" markClassName="h-7" className="text-[17px]" />
         </div>
 
         <nav className="flex-1 space-y-0.5 p-2">

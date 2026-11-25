@@ -27,6 +27,8 @@
   --warning-foreground: 0 0% 100%;
   --brand-platinum: 217 18% 86%; /* #D5DAE2 — MoMo + warranty only, never text */
   --brand-stroke: 222 64% 55%; /* #4470D6 — logo stroke, focus */
+  --logo-tile: 221 52% 8%; /* Ink Navy */
+  --logo-fg: 0 0% 100%;
   --border: 216 23% 91%;
   --input: 216 23% 91%;
   --ring: 222 64% 55%;
@@ -57,6 +59,7 @@
     --success-foreground: 240 4% 5%;
     --warning: 37 91% 55%; /* #F5A524 */
     --warning-foreground: 240 4% 5%;
+    --logo-tile: 240 4% 14%; /* #232326 — lifts the tile off Onyx */
     --border: 240 3% 17%; /* #2A2A2D */
     --input: 240 3% 17%;
     color-scheme: dark;

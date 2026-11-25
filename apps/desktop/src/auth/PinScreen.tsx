@@ -1,3 +1,4 @@
+import { LogoMark } from '@extramile/ui';
 import { Delete, KeyRound, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useAuth } from './AuthProvider';
@@ -12,11 +13,9 @@ export function PinScreen() {
     <div className="flex h-full items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <span className="flex size-12 items-center justify-center rounded-xl bg-foreground text-lg font-bold text-background">
-            E
-          </span>
+          <LogoMark className="h-12" />
           <div>
-            <p className="text-base font-semibold">ExtraMile Back-office</p>
+            <p className="font-display text-lg font-bold tracking-tight">ExtraMile Back-office</p>
             <p className="text-muted-foreground">
               {phase === 'enroll' ? 'Set up this device' : 'Enter your PIN to continue'}
             </p>

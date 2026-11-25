@@ -1,2 +1,3 @@
 export { cn } from './lib/cn';
 export { Button, buttonVariants, type ButtonProps } from './components/button';
+export { Logo, LogoMark } from './components/logo';
