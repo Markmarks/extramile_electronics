@@ -72,7 +72,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+          # No cache: this job never runs pnpm install, so there is no store to save.
 
       - name: Security guard — README rules + Tauri hardening (G-01..G-13)
         run: node scripts/security-guard.mjs
@@ -91,15 +91,15 @@ jobs:
         working-directory: apps/desktop/src-tauri
         run: cargo audit
 
-      # Community rules for TS/React/Next/Rust/secrets. Phase 1 reports only (results in
-      # the Security tab); switch to --error once the first baseline has been triaged.
+      # Community rules for TS/React/Next/Rust/secrets. Blocking: the first baseline
+      # (2026-11-25, 123 rules, 294 files) had 0 findings. Results also go to the Security tab.
       - name: Semgrep
         run: |
           docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep semgrep scan \
             --config p/typescript --config p/react --config p/nextjs \
             --config p/rust --config p/secrets \
             --exclude node_modules --exclude .next --exclude dist --exclude target \
-            --sarif --output semgrep.sarif --metrics off
+            --sarif --output semgrep.sarif --metrics off --error
 
       - uses: github/codeql-action/upload-sarif@v3
         if: always() && hashFiles('semgrep.sarif') != ''
