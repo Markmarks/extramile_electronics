@@ -43,6 +43,17 @@ test.describe('storefront: browse', () => {
     await expect(page.locator(`a[href="${href}"]`).first()).toBeVisible();
   });
 
+  test('a product page has a customer reviews section', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await page.goto('/');
+    const href = (await page.locator('a[href^="/p/"]').first().getAttribute('href'))!;
+    await page.goto(href);
+    await expect(page.getByRole('heading', { name: 'Customer reviews' })).toBeVisible();
+    // Either published reviews or the empty state — never a broken section.
+    await expect(page.getByTestId('review-list').or(page.getByTestId('no-reviews'))).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
   test('sign-in page renders', async ({ page }) => {
     await page.goto('/login');
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
@@ -77,5 +88,21 @@ test.describe('storefront: buy', { tag: '@backend' }, () => {
     await page.goto('/checkout');
     await expect(page.getByRole('heading', { name: 'Checkout' })).toBeVisible();
     // Never submits a payment — Paystack is exercised manually with pk_test_ keys only.
+  });
+
+  test('a signed-out visitor is asked to sign in to review, and comes back to the form', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const href = (await page.locator('a[href^="/p/"]').first().getAttribute('href'))!;
+    await page.goto(href);
+    const signIn = page.getByRole('link', { name: 'Sign in to write a review' });
+    await expect(signIn).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId('review-form')).toHaveCount(0);
+    await signIn.click();
+    await page.waitForURL('**/login?**');
+    expect(new URL(page.url()).searchParams.get('next')).toBe(`${href}#write-review`);
+    // Writing one needs a customer with a delivered order — there is no seeded account;
+    // the DB rules are covered in apps/web/tests/db/reviews.test.ts.
   });
 });
