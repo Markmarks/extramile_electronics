@@ -19,6 +19,7 @@ import {
   pinUnlock,
   sessionReseal,
 } from '../lib/tauri';
+import { classifyRefreshError, unlockFailureMessage, type UnlockFailure } from './unlockError';
 
 type Role = 'customer' | 'staff' | 'admin' | null;
 
@@ -35,6 +36,8 @@ interface AuthState {
   user: User | null;
   role: Role;
   error: string | null;
+  /** Why the last PIN unlock couldn't restore the session (null when it didn't get that far). */
+  unlockFailure: UnlockFailure | null;
   /** First-time device enrolment: verify an admin account once, then seal it under `pin`. */
   enroll: (email: string, password: string, pin: string) => Promise<void>;
   /** Daily unlock — restores the stored Supabase session from the PIN. */
@@ -60,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<Role>(null);
   const [error, setError] = useState<string | null>(null);
+  const [unlockFailure, setUnlockFailure] = useState<UnlockFailure | null>(null);
 
   // Post-restore staff gate — the bound account must still be staff/admin (D-02).
   // Returns the role on success, or null (and signs the local session out) otherwise.
@@ -104,7 +108,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Persist rotated refresh tokens back into the vault (cached key, no PIN prompt).
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'TOKEN_REFRESHED' && session?.refresh_token) {
-        void sessionReseal(session.refresh_token).catch(() => {});
+        // A failed reseal leaves the previous (now rotated-out) token in the vault, so the
+        // next unlock is rejected — make that visible instead of swallowing it.
+        void sessionReseal(session.refresh_token).catch((err: unknown) =>
+          console.warn('session reseal after token refresh failed:', err),
+        );
       }
     });
 
@@ -148,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const unlock = useCallback(
     async (pin: string) => {
       setError(null);
+      setUnlockFailure(null);
       let refreshToken: string;
       try {
         refreshToken = await pinUnlock(pin);
@@ -163,11 +172,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         return;
       }
-      const { data, error: e } = await supabase.auth.refreshSession({
-        refresh_token: refreshToken,
-      });
+      let data: Awaited<ReturnType<typeof supabase.auth.refreshSession>>['data'];
+      let e: unknown;
+      try {
+        ({ data, error: e } = await supabase.auth.refreshSession({ refresh_token: refreshToken }));
+      } catch (thrown) {
+        data = { user: null, session: null };
+        e = thrown;
+      }
       if (e || !data.user) {
-        setError('Stored session expired — forget this device and re-enrol.');
+        // Keep the vault either way: a network blip must not push staff into wiping it.
+        const kind = classifyRefreshError(e);
+        console.warn(`PIN unlock: refreshSession failed (${kind}):`, e ?? 'no user returned');
+        setUnlockFailure(kind);
+        setError(unlockFailureMessage(kind, e));
         return;
       }
       const r = await gate(data.user);
@@ -197,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setRole(null);
     setError(null);
+    setUnlockFailure(null);
     setPhase('locked');
   }, []);
 
@@ -206,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setRole(null);
     setError(null);
+    setUnlockFailure(null);
     setPhase('enroll');
   }, []);
 
@@ -215,14 +235,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // If changing the password rotated the refresh token, keep the PIN vault in sync.
     const { data } = await supabase.auth.getSession();
     if (data.session?.refresh_token) {
-      await sessionReseal(data.session.refresh_token).catch(() => {});
+      await sessionReseal(data.session.refresh_token).catch((err: unknown) =>
+        console.warn('session reseal after password change failed:', err),
+      );
     }
     return null;
   }, []);
 
   const value = useMemo<AuthState>(
-    () => ({ phase, user, role, error, enroll, unlock, lock, signOut, updatePassword }),
-    [phase, user, role, error, enroll, unlock, lock, signOut, updatePassword],
+    () => ({
+      phase,
+      user,
+      role,
+      error,
+      unlockFailure,
+      enroll,
+      unlock,
+      lock,
+      signOut,
+      updatePassword,
+    }),
+    [phase, user, role, error, unlockFailure, enroll, unlock, lock, signOut, updatePassword],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

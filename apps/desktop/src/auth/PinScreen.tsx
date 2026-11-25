@@ -142,7 +142,8 @@ function Enroll() {
 
 /** Daily unlock — 6-digit PIN restores the stored session. Type or click the keypad. */
 function Unlock() {
-  const { unlock, signOut, error } = useAuth();
+  const { unlock, signOut, error, unlockFailure } = useAuth();
+  const rejected = unlockFailure === 'rejected';
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -190,7 +191,23 @@ function Unlock() {
       />
       <PinBoxes value={pin} error={Boolean(error)} />
 
-      {error && <p className="text-center text-xs text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="text-center text-xs text-destructive">
+          {error}
+        </p>
+      )}
+      {rejected && (
+        <button
+          type="button"
+          className="btn-secondary h-10 w-full"
+          onClick={(e) => {
+            e.stopPropagation();
+            void signOut();
+          }}
+        >
+          Forget this device
+        </button>
+      )}
 
       <div className="grid grid-cols-3 gap-2">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
@@ -228,9 +245,15 @@ function Unlock() {
         <span className="text-muted-foreground">
           {busy ? 'Unlocking…' : 'Locks after 15 min idle'}
         </span>
-        <button type="button" className="btn-ghost h-7 px-2 text-xs" onClick={() => void signOut()}>
-          Forget this device
-        </button>
+        {!rejected && (
+          <button
+            type="button"
+            className="btn-ghost h-7 px-2 text-xs"
+            onClick={() => void signOut()}
+          >
+            Forget this device
+          </button>
+        )}
       </div>
     </form>
   );
