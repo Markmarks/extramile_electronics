@@ -23,7 +23,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https://*.supabase.co https://api.paystack.co https://www.dnvmart.com http://localhost:3001; img-src 'self' data: https://*.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline'",
+      "csp": "default-src 'self'; connect-src 'self' https://*.supabase.co https://api.paystack.co https://www.dnvmart.com; img-src 'self' data: https://*.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline'",
+      "devCsp": "default-src 'self'; connect-src 'self' https://*.supabase.co https://api.paystack.co https://www.dnvmart.com http://localhost:3001; img-src 'self' data: https://*.supabase.co; script-src 'self'; style-src 'self' 'unsafe-inline'",
       "capabilities": ["default"]
     }
   },
@@ -32,7 +33,9 @@
     "targets": ["msi", "nsis"],
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/icon.ico"],
     "windows": {
-      "nsis": { "installMode": "perMachine" }
+      "nsis": {
+        "installMode": "perMachine"
+      }
     }
   }
 }

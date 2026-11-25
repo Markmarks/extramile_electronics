@@ -1,7 +1,8 @@
 'use server';
 
-import { assertTransition, type OrderStatus } from '@extramile/core';
+import { assertTransition, uuidSchema, type OrderStatus } from '@extramile/core';
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import { dispatchEmail, deliveryEmail } from '@/lib/email/templates';
 import { notifyOnce, type NotificationEvent } from '@/lib/notifications';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -24,6 +25,21 @@ async function requireStaffId(): Promise<string | null> {
   return role === 'staff' || role === 'admin' ? user.id : null;
 }
 
+const ORDER_STATUSES = [
+  'pending',
+  'confirmed',
+  'packed',
+  'dispatched',
+  'delivered',
+  'cancelled',
+  'refunded',
+  'oversold',
+] as const satisfies readonly OrderStatus[];
+
+// Server actions are public endpoints — validate even though only staff get past the
+// role check (README rule 7).
+const transitionSchema = z.object({ orderId: uuidSchema, to: z.enum(ORDER_STATUSES) });
+
 const EVENT_FOR: Partial<Record<OrderStatus, NotificationEvent>> = {
   dispatched: 'dispatch',
   delivered: 'delivery',
@@ -32,10 +48,14 @@ const EVENT_FOR: Partial<Record<OrderStatus, NotificationEvent>> = {
 /** Staff-only forward transition: update status, audit, send exactly one email. */
 export async function advanceOrderAction(
   orderId: string,
-  to: OrderStatus,
+  toStatus: OrderStatus,
 ): Promise<TransitionResult> {
   const actor = await requireStaffId();
   if (!actor) return { ok: false, error: 'Not authorised.' };
+
+  const input = transitionSchema.safeParse({ orderId, to: toStatus });
+  if (!input.success) return { ok: false, error: 'Invalid request.' };
+  const { to } = input.data;
 
   const admin = createAdminClient();
   const { data } = await admin

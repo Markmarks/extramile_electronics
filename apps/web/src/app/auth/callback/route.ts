@@ -5,6 +5,12 @@ import type { Database } from '@extramile/core';
 import { publicEnv } from '@/lib/env';
 import { sanitizeNext } from '@/lib/auth/next';
 import { mergeGuestCart } from '@/lib/cart/merge';
+import { z } from 'zod';
+
+const querySchema = z.object({
+  code: z.string().min(1).max(512).nullable(),
+  next: z.string().max(2048).nullable(),
+});
 
 /**
  * OAuth / magic-link callback: PKCE code exchange, then merge the guest cart.
@@ -12,8 +18,12 @@ import { mergeGuestCart } from '@/lib/cart/merge';
  */
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
-  const code = url.searchParams.get('code');
-  const next = sanitizeNext(url.searchParams.get('next'));
+  const query = querySchema.safeParse({
+    code: url.searchParams.get('code'),
+    next: url.searchParams.get('next'),
+  });
+  const code = query.success ? query.data.code : null;
+  const next = sanitizeNext(query.success ? query.data.next : null);
 
   if (!code) {
     return NextResponse.redirect(new URL('/login?error=missing_code', url.origin));
