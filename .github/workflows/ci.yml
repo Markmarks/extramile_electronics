@@ -84,8 +84,20 @@ jobs:
         run: supabase db lint
       - name: Install
         run: pnpm install --frozen-lockfile
+      # The workflow-level env points at a dummy project for `next build`; the RLS suite
+      # must hit the local stack started above, so pass its real URL/keys (local demo
+      # values printed by `supabase status`, not secrets) inline — inline wins over `env:`.
       - name: RLS suite (S-01..S-12)
-        run: pnpm --filter @extramile/web test:rls
+        run: |
+          eval "$(supabase status -o env)"
+          if [ -z "$API_URL" ] || [ -z "$ANON_KEY" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
+            echo "::error::supabase status -o env did not print API_URL / ANON_KEY / SERVICE_ROLE_KEY"
+            exit 1
+          fi
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY" \
+          SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" \
+            pnpm --filter @extramile/web test:rls
 
   # ── E2E against a preview deploy (SDLC §3 step 7) ─────────────────────────────
   # Enabled from phase P3+. Requires a preview URL secret.
