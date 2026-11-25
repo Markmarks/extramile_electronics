@@ -32,7 +32,7 @@ export function OAuthButtons({ next = '/' }: { next?: string }) {
     <div className="space-y-3">
       <button
         type="button"
-        className="btn w-full bg-card text-[15px] text-foreground ring-1 ring-black/10 hover:bg-black/[0.03]"
+        className="btn w-full bg-card text-[15px] text-foreground ring-1 ring-foreground/10 hover:bg-foreground/[0.03]"
         disabled={busy !== null}
         onClick={() => signIn('google')}
       >

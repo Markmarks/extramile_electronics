@@ -36,8 +36,8 @@ function StarPicker({ error }: { error?: string }) {
               <Star
                 className={`size-7 rounded peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 ${
                   n <= shown
-                    ? 'fill-[#FF9500] text-[#FF9500]'
-                    : 'fill-black/[0.08] text-transparent'
+                    ? 'fill-warning text-warning'
+                    : 'fill-foreground/[0.08] text-transparent'
                 }`}
                 aria-hidden
               />

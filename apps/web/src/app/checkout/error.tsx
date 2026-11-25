@@ -6,7 +6,7 @@ import Link from 'next/link';
 export default function CheckoutError({ reset }: { error: Error; reset: () => void }) {
   return (
     <main className="container flex min-h-[50vh] flex-col items-center justify-center gap-5 py-16 text-center">
-      <AlertTriangle className="size-14 text-[#FF9500]" aria-hidden />
+      <AlertTriangle className="size-14 text-warning" aria-hidden />
       <div className="space-y-1.5">
         <h1 className="text-3xl font-bold">Checkout hit a snag</h1>
         <p className="text-[17px] text-muted-foreground">

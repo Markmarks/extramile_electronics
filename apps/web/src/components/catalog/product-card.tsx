@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { ProductListItem } from '@/lib/catalog/queries';
 import { tintFor } from '@/lib/catalog/tint';
 import { Price } from './price';
+import { WarrantyBadge } from './trust-badge';
 
 export function ProductCard({ product }: { product: ProductListItem }) {
   const onSale = product.compareAtPrice != null && product.compareAtPrice > (product.minPrice ?? 0);
@@ -36,7 +37,7 @@ export function ProductCard({ product }: { product: ProductListItem }) {
             </span>
           )}
           {product.condition !== 'new' && (
-            <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+            <span className="rounded-md bg-warning/15 px-2 py-0.5 text-[11px] font-semibold text-warning">
               {CONDITION_LABELS[product.condition]}
             </span>
           )}
@@ -50,12 +51,13 @@ export function ProductCard({ product }: { product: ProductListItem }) {
       <div className="space-y-0.5 px-2 pb-2 pt-3">
         <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           {product.brand && `${product.brand.name} · `}
-          <span className={product.condition === 'new' ? '' : 'text-amber-700'}>
+          <span className={product.condition === 'new' ? '' : 'text-warning'}>
             {CONDITION_LABELS[product.condition]}
           </span>
         </p>
         <h3 className="line-clamp-1 text-[15px] font-semibold">{product.title}</h3>
         <Price amount={product.minPrice} compareAt={product.compareAtPrice} className="text-sm" />
+        <WarrantyBadge months={product.warrantyMonths} className="mt-1.5" />
       </div>
     </Link>
   );

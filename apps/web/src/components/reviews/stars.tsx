@@ -12,7 +12,7 @@ export function Stars({ rating, className = 'size-4' }: { rating: number; classN
         <Star
           key={n}
           className={`${className} ${
-            n <= rating ? 'fill-[#FF9500] text-[#FF9500]' : 'fill-black/[0.08] text-transparent'
+            n <= rating ? 'fill-warning text-warning' : 'fill-foreground/[0.08] text-transparent'
           }`}
           aria-hidden
         />

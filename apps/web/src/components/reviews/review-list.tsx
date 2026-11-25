@@ -25,7 +25,7 @@ export function ReviewList({ reviews }: { reviews: PublishedReview[] }) {
           )}
           <p className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
             {r.verified && (
-              <span className="inline-flex items-center gap-1 font-medium text-[#248A3D]">
+              <span className="inline-flex items-center gap-1 font-medium text-success">
                 <BadgeCheck className="size-3.5" aria-hidden /> Verified purchase
               </span>
             )}

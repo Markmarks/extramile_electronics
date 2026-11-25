@@ -1,0 +1,369 @@
+<title>ExtraMile Palette Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one live preview on top that any option can drive; the five options below as comparable cards. */
+:root {
+  --bg: #FFFFFF; --surface: #FFFFFF; --fg: #0C1320; --muted: #5B6672; --line: #DDE3E1; --focus: #0A7F55;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-text: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  /* preview palette, set by script */
+  --p-ink: #0C1320; --p-pri: #0A7F55; --p-acc: #F2B705; --p-bg: #FFFFFF; --p-sig: #3DDC97; --p-tint: #E3F4EC; --p-pri-text: #086B48;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0C1320; --surface: #121B2B; --fg: #E8ECEF; --muted: #9AA6B2; --line: #24304A; --focus: #3DDC97; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0C1320; --surface: #121B2B; --fg: #E8ECEF; --muted: #9AA6B2; --line: #24304A; --focus: #3DDC97; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-text); font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); letter-spacing: -0.035em; line-height: 1.05; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.mono { font-family: var(--f-mono); }
+.eyebrow { font-family: var(--f-mono); font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+header.top { padding-block: 3rem 2rem; display: grid; gap: .9rem; }
+header.top h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); font-weight: 760; }
+header.top p { color: var(--muted); font-size: 1.08rem; }
+
+/* switcher */
+.switch { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.switch button { font: 600 .88rem var(--f-text); border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 999px; padding: .45rem .9rem .45rem .5rem; display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; }
+.switch button[aria-pressed="true"] { border-color: var(--fg); box-shadow: 0 0 0 1px var(--fg); }
+.dots { display: inline-flex; }
+.dots i { width: 16px; height: 16px; border-radius: 50%; margin-left: -4px; box-shadow: 0 0 0 2px var(--surface); }
+.dots i:first-child { margin-left: 0; }
+
+/* preview: palette colours (--p-*) on a chosen shop background (--s-*), both set by script */
+.preview { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--s-bg); color: var(--s-fg); transition: background .25s, color .25s; }
+.pv-bar { background: var(--s-bg); display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 1.1rem; border-bottom: 1px solid var(--s-line); flex-wrap: wrap; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo svg { width: 40px; height: auto; flex: none; }
+.logo b { font-family: var(--f-display); font-weight: 780; font-size: 1.45rem; letter-spacing: -.055em; color: var(--s-fg); }
+.pv-bar nav { display: flex; gap: 1rem; font-size: .85rem; font-weight: 500; color: var(--s-muted); flex-wrap: wrap; }
+.pv-bar nav .bag { color: var(--s-fg); font-weight: 600; }
+.pv-hero { background: var(--s-bg); color: var(--s-fg); border-bottom: 1px solid var(--s-line); padding: clamp(1.4rem, 4.5vw, 2.8rem); display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 2rem; align-items: center; }
+@media (max-width: 720px) { .pv-hero { grid-template-columns: 1fr; } }
+.pv-hero h2 { font-weight: 760; font-size: clamp(1.8rem, 4.6vw, 3rem); letter-spacing: -.045em; margin-bottom: .9rem; }
+.pv-hero h2 em { font-style: normal; color: var(--s-hl); }
+.pv-hero p { color: var(--s-muted); margin-bottom: 1.3rem; }
+.btns { display: flex; flex-wrap: wrap; gap: .55rem; }
+.b { font: 600 .93rem/1 var(--f-text); border-radius: 10px; height: 44px; padding: 0 1.15rem; display: inline-flex; align-items: center; border: 0; cursor: default; }
+.b-line { background: transparent; color: var(--s-fg); box-shadow: inset 0 0 0 1.5px var(--s-line2); }
+.b-pri { background: var(--p-pri-btn); color: var(--p-pri-fg); }
+.b-acc { background: var(--p-acc); color: var(--p-ink); }
+.b-ink { background: var(--s-fg); color: var(--s-bg); }
+.art { aspect-ratio: 1; max-width: 100%; border-radius: 18px; background: var(--s-tint); display: grid; place-items: center; position: relative; overflow: hidden; }
+.art .road { position: absolute; left: -10%; right: -10%; bottom: 24%; height: 6px; border-radius: 3px; background: var(--s-hl); transform: rotate(-8deg); }
+.phone { width: 32%; aspect-ratio: 9/19; border-radius: 16px; background: var(--s-phone); box-shadow: inset 0 0 0 3px rgb(255 255 255 / .14), 0 12px 28px -10px rgb(0 0 0 / .45); position: relative; z-index: 1; }
+.pv-body { padding: clamp(1rem, 3vw, 1.6rem); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 1rem; }
+.pv-body > * { min-width: 0; }
+.card { background: var(--s-card); border-radius: 16px; padding: 1.1rem; display: grid; gap: .55rem; align-content: start; border: 1px solid var(--s-line); }
+.card .lab { font-size: .72rem; font-weight: 600; color: var(--s-muted); text-transform: uppercase; letter-spacing: .06em; }
+.card .note { font-size: .85rem; color: var(--s-muted); }
+.card .name { font-family: var(--f-display); font-weight: 680; font-size: 1.12rem; letter-spacing: -.02em; line-height: 1.2; }
+.card .price { font-family: var(--f-display); font-weight: 760; font-size: 1.45rem; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.badge { display: inline-flex; font-size: .76rem; font-weight: 600; border-radius: 6px; padding: .25rem .55rem; width: fit-content; }
+.badge.v { background: var(--s-tint); color: var(--s-hl); }
+.badge.w { background: var(--s-warr); color: var(--s-fg); }
+.track { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); padding-top: 20px; margin-top: .3rem; }
+.track::before, .track::after { content: ""; position: absolute; top: 8px; left: 0; height: 2px; }
+.track::before { right: 0; background: var(--s-line2); }
+.track::after { width: 62.5%; background: var(--s-hl); }
+.stop { position: relative; font-size: .74rem; font-weight: 600; }
+.stop::before { content: ""; position: absolute; top: -17px; left: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--s-card); box-shadow: inset 0 0 0 2px var(--s-line2); z-index: 1; }
+.stop.d::before { background: var(--s-hl); box-shadow: none; }
+.stop.n::before { background: var(--p-acc); box-shadow: 0 0 0 4px color-mix(in srgb, var(--p-acc) 35%, transparent); }
+.link { color: var(--s-hl); font-weight: 600; font-size: .9rem; }
+.switch .sw-bg { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(127 127 127 / .45); }
+.switch-label { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); align-self: center; margin-right: .25rem; }
+
+/* option cards */
+section.opts { padding-block: 3rem 1rem; display: grid; gap: 1.25rem; }
+.optgrid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.opt.sel { border-color: var(--fg); box-shadow: 0 0 0 1px var(--fg); }
+.strip { display: grid; grid-template-columns: 2fr 1.6fr 1fr 1fr 1.2fr; height: 116px; }
+.strip div { padding: .55rem .5rem; display: flex; align-items: flex-end; font-family: var(--f-mono); font-size: .62rem; line-height: 1.3; min-width: 0; overflow: hidden; }
+.opt .body { padding: 1.1rem 1.2rem 1.25rem; display: grid; gap: .7rem; align-content: start; }
+.opt .hd { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; }
+.opt h3 { font-size: 1.35rem; font-weight: 720; }
+.opt .letter { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); }
+.opt .idea { color: var(--muted); font-size: .93rem; }
+.pc { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; font-size: .86rem; }
+.pc > div { min-width: 0; }
+.pc b { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .2rem; }
+.pc ul { margin: 0; padding-left: 1rem; display: grid; gap: .2rem; }
+@media (max-width: 420px) { .pc { grid-template-columns: 1fr; } }
+.ratios { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.opt .try { justify-self: start; font: 600 .85rem var(--f-text); border-radius: 8px; padding: .5rem .85rem; border: 1.5px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.rec { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .04em; padding: .2rem .5rem; border-radius: 5px; background: var(--fg); color: var(--bg); margin-left: .4rem; vertical-align: middle; }
+
+/* compare table */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 640px; }
+th, td { text-align: left; padding: .7rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.meter { display: inline-flex; gap: 3px; }
+.meter i { width: 14px; height: 6px; border-radius: 2px; background: var(--line); }
+.meter i.on { background: var(--fg); }
+footer { padding-block: 2.5rem 3rem; color: var(--muted); font-size: .85rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mark" viewBox="0 0 64 48">
+    <rect width="48" height="48" rx="12" style="fill:var(--s-tile)"/>
+    <rect x="12" y="11" width="6.5" height="26" rx="1.5" fill="#FFFFFF"/>
+    <rect x="12" y="11" width="23" height="6.5" rx="1.5" fill="#FFFFFF"/>
+    <rect x="12" y="30.5" width="23" height="6.5" rx="1.5" fill="#FFFFFF"/>
+    <rect x="12" y="20.75" width="52" height="6.5" rx="3.25" style="fill:var(--s-hl)"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">ExtraMile rebrand · colour</span>
+    <h1>Palette directions</h1>
+    <p>Five everyday options and five premium ones. Each keeps the same logo, type and layout so only colour changes. Pick a shop background and a palette to see them together. Every text pairing here passes WCAG AA; accent colours always carry dark text.</p>
+  </header>
+
+  <div class="switch" id="switch-bg" role="group" aria-label="Shop background"><span class="switch-label">Background</span></div>
+  <div class="switch" id="switch-prem" role="group" aria-label="Premium palettes"><span class="switch-label">Premium</span></div>
+  <div class="switch" id="switch" role="group" aria-label="Everyday palettes"><span class="switch-label">Everyday</span></div>
+
+  <div class="preview" id="preview" aria-live="polite">
+    <div class="pv-bar">
+      <div class="logo"><svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg><b>extramile</b></div>
+      <nav><span>Phones</span><span>Laptops</span><span>Audio</span><span>Orders</span><span class="bag">Bag · 1</span></nav>
+    </div>
+    <div class="pv-hero">
+      <div>
+        <h2>Genuine phones, <em>checked</em> before they reach you.</h2>
+        <p>IMEI-verified, warranty on record, tracked from our shelf to your door.</p>
+        <div class="btns"><span class="b b-pri">Shop phones</span><span class="b b-line">How we verify</span></div>
+      </div>
+      <div class="art" aria-hidden="true"><div class="road"></div><div class="phone"></div></div>
+    </div>
+    <div class="pv-body">
+      <div class="card">
+        <span class="lab">Samsung</span>
+        <span class="name">Galaxy A55 5G, 256 GB</span>
+        <div class="btns" style="gap:.4rem"><span class="badge v">IMEI verified</span><span class="badge w">12-mo warranty</span></div>
+        <span class="price">GH₵ 5,299.00</span>
+        <span class="b b-pri" style="justify-self:start">Add to bag</span>
+      </div>
+      <div class="card">
+        <span class="lab">Checkout · Pay</span>
+        <span class="name">Total GH₵ 5,334.00</span>
+        <span class="note">Includes GH₵ 35.00 delivery to Greater Accra.</span>
+        <div class="btns"><span class="b b-acc">Pay with MoMo</span><span class="b b-ink">Pay by card</span></div>
+        <span class="link">Change delivery zone</span>
+      </div>
+      <div class="card">
+        <span class="lab">Order <span class="mono">EM-2611-0482</span></span>
+        <span class="name">On the way to East Legon</span>
+        <div class="track"><span class="stop d">Paid</span><span class="stop d">Packed</span><span class="stop n">On the way</span><span class="stop">Delivered</span></div>
+        <span class="note">Expected 2:30–4pm. Check the seal before you accept.</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="opts">
+    <h2 style="font-size:clamp(1.6rem,4vw,2.3rem);font-weight:740">Premium options</h2>
+    <p style="color:var(--muted)">Deep neutrals with one jewel or metal tone. On dark backgrounds the main button turns light, the way luxury sites do it.</p>
+    <div class="optgrid" id="opts-prem"></div>
+  </section>
+
+  <section class="opts">
+    <h2 style="font-size:clamp(1.6rem,4vw,2.3rem);font-weight:740">Everyday options</h2>
+    <div class="optgrid" id="opts"></div>
+  </section>
+
+  <section class="opts">
+    <h2 style="font-size:clamp(1.6rem,4vw,2.3rem);font-weight:740">Side by side</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Option</th><th>Feels</th><th>Stands out in Accra</th><th>Reads as "trust"</th><th>Main risk</th></tr></thead>
+        <tbody id="cmp"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Option A is the palette in the brand book. Choosing another swaps the colour chapter and the code tokens; nothing else in the identity changes.</footer>
+</div>
+
+<script>
+var P = [
+  { id: 'A', name: 'Midnight & Mile Green', rec: true,
+    idea: 'Ghana’s green and gold, grounded in a blue-black so it reads as electronics. Green means verified and go; gold marks the next step.',
+    c: { ink: '#0C1320', pri: '#0A7F55', acc: '#F2B705', bg: '#FFFFFF', sig: '#3DDC97', tint: '#E3F4EC', priText: '#086B48' },
+    names: ['Midnight', 'Mile Green', 'Marker Gold', 'Signal', 'White'],
+    pros: ['Ties to the trust pillars', 'Gold MoMo button echoes MTN yellow', 'No local rival owns it'],
+    cons: ['Green is common in fintech', 'Needs gold kept rare'],
+    ratios: 'White on primary 5.02 · Ink on accent 10.23 · Signal on ink 10.52',
+    feels: 'Dependable, local, calm', stand: 4, trust: 5, risk: 'Can look like a bank or MoMo app if gold is overused' },
+  { id: 'B', name: 'Cobalt & Citrus',
+    idea: 'A deep cobalt that says technology without copying Apple, with a citrus-lime accent for energy at the till.',
+    c: { ink: '#0E1430', pri: '#2B4BD8', acc: '#D4F04A', bg: '#FFFFFF', sig: '#8EA2FF', tint: '#E6EBFF', priText: '#2B4BD8' },
+    names: ['Night Navy', 'Cobalt', 'Citrus', 'Periwinkle', 'White'],
+    pros: ['Blue is the safest "tech" colour', 'Citrus makes CTAs pop', 'Highest primary contrast (6.77)'],
+    cons: ['Closest to the old blue look', 'Lime can feel loud on big areas'],
+    ratios: 'White on primary 6.77 · Ink on accent 14.09 · Signal on ink 7.54',
+    feels: 'Energetic, techy, young', stand: 3, trust: 4, risk: 'Blue + lime is popular with gadget and gaming brands' },
+  { id: 'C', name: 'Volta Teal & Sunset',
+    idea: 'Deep lake teal with a warm sunset orange. Calmer and more premium, closer to a design store than a phone stall.',
+    c: { ink: '#0F1F21', pri: '#0B6B70', acc: '#F26B1D', bg: '#FFFFFF', sig: '#4FD1C5', tint: '#DDF1F0', priText: '#0B6B70' },
+    names: ['Deep Lake', 'Volta Teal', 'Sunset', 'Lagoon', 'White'],
+    pros: ['Premium and grown-up', 'Warm accent feels welcoming', 'Teal is rare in local retail'],
+    cons: ['Orange sits near Jumia’s brand', 'Teal is less obviously "verified"'],
+    ratios: 'White on primary 6.27 · Ink on accent 5.57 · Signal on ink 9.09',
+    feels: 'Premium, relaxed, warm', stand: 4, trust: 3, risk: 'Orange CTAs invite comparison with Jumia' },
+  { id: 'D', name: 'Graphite & Signal Red',
+    idea: 'Black, red and gold. Loud, confident retail with the flag’s red at the front. Built for sales and launches.',
+    c: { ink: '#17181C', pri: '#C62A22', acc: '#FFC629', bg: '#FFFFFF', sig: '#FF6A5E', tint: '#FBE4E2', priText: '#A8231C' },
+    names: ['Graphite', 'Signal Red', 'Bright Gold', 'Coral', 'White'],
+    pros: ['Strongest shelf and signage impact', 'Urgency for promotions', 'Bold on social'],
+    cons: ['Red also means error', 'Near Telecel’s red', 'Shouts "discount", not "genuine"'],
+    ratios: 'White on primary 5.59 · Ink on accent 11.29 · Signal on ink 6.31',
+    feels: 'Bold, urgent, promotional', stand: 5, trust: 2, risk: 'Works against the "careful, verified" promise' },
+  { id: 'E', name: 'Indigo & Coral',
+    idea: 'A modern direct-to-consumer look: violet-indigo with a friendly coral. The most different from anything on Accra’s high streets.',
+    c: { ink: '#16122B', pri: '#4A3AD0', acc: '#FF7A59', bg: '#FFFFFF', sig: '#A79BFF', tint: '#EAE7FF', priText: '#4A3AD0' },
+    names: ['Ink Violet', 'Indigo', 'Coral', 'Lavender', 'White'],
+    pros: ['Very distinctive', 'Friendly and modern', 'Highest primary contrast (7.48)'],
+    cons: ['Feels like a startup app', 'Less tie to place or trust'],
+    ratios: 'White on primary 7.48 · Ink on accent 7.08 · Signal on ink 7.59',
+    feels: 'Modern, friendly, playful', stand: 5, trust: 3, risk: 'Trend-led; may date in two or three years' },
+
+  /* ---- Premium set: deep neutrals, one jewel or metal tone, light buttons on dark ---- */
+  { id: 'F', premium: true, rec: 'PREMIUM PICK', name: 'Onyx & Champagne', darkBtn: true, priFg: '#111113',
+    idea: 'Near-black with a soft champagne gold, the colours of a jeweller’s case. Gold is the main action, so every button feels like the good part of the store.',
+    c: { ink: '#111113', pri: '#B8935A', acc: '#EDE4D3', bg: '#FFFFFF', sig: '#D8BC8A', tint: '#F5EEE2', priText: '#8A6630' },
+    names: ['Onyx', 'Champagne', 'Ivory', 'Pale Gold', 'White'],
+    pros: ['Instantly reads as premium', 'Flatters product photos of black and silver phones', 'Nobody in Accra electronics owns it'],
+    cons: ['Gold buttons need dark text', 'Can feel exclusive to budget buyers'],
+    ratios: 'Onyx on champagne 6.61 · Pale gold on onyx 10.31 · Bronze text on white 5.22',
+    feels: 'Luxurious, quiet, confident', stand: 5, trust: 4, risk: 'May price-signal "expensive" on mid-range phones' },
+  { id: 'G', premium: true, name: 'Emerald & Brass', darkBtn: true,
+    idea: 'A deep bottle-green with aged brass. Keeps the brand’s green "verified" meaning, but moves it from fintech to private bank.',
+    c: { ink: '#0A1915', pri: '#0F5C47', acc: '#C9A227', bg: '#FFFFFF', sig: '#86D4B4', tint: '#E2F0EA', priText: '#0F5C47' },
+    names: ['Forest Black', 'Emerald', 'Brass', 'Jade', 'White'],
+    pros: ['Premium version of option A', 'Green and gold still nod to home', 'Strong trust signal'],
+    cons: ['Dark green can feel heavy', 'Brass needs good print stock'],
+    ratios: 'White on emerald 7.95 · Ink on brass 7.47 · Jade on ink 10.40',
+    feels: 'Heritage, assured, rich', stand: 4, trust: 5, risk: 'Can look like a bank if type and imagery are too formal' },
+  { id: 'H', premium: true, name: 'Sapphire & Platinum', darkBtn: true,
+    idea: 'Ink navy and sapphire with cool platinum. The language of flagship phone launches: precise, metallic, calm.',
+    c: { ink: '#0A1120', pri: '#1F3A68', acc: '#D5DAE2', bg: '#FFFFFF', sig: '#AFC4EE', tint: '#E6ECF6', priText: '#1F3A68' },
+    names: ['Ink Navy', 'Sapphire', 'Platinum', 'Ice Blue', 'White'],
+    pros: ['Feels like a flagship launch', 'Very high contrast (11.27)', 'Ages well'],
+    cons: ['Blue is common in tech', 'Platinum MoMo button is subtle'],
+    ratios: 'White on sapphire 11.27 · Ink on platinum 13.43 · Ice on ink 10.73',
+    feels: 'Precise, cool, corporate-luxe', stand: 3, trust: 5, risk: 'Could feel cold next to warmer local brands' },
+  { id: 'I', premium: true, name: 'Oxblood & Gold',
+    idea: 'Wine-dark oxblood and true gold. Rich and warm, like a leather phone case. Ghana’s red and gold, made formal.',
+    darkBtn: true,
+    c: { ink: '#150D0F', pri: '#6E1F2A', acc: '#D4AF37', bg: '#FFFFFF', sig: '#E7B8BE', tint: '#F6E7E9', priText: '#6E1F2A' },
+    names: ['Black Cherry', 'Oxblood', 'Gold', 'Rose', 'White'],
+    pros: ['Warm and memorable', 'Gold MoMo button is unmistakable', 'Strong on packaging'],
+    cons: ['Red family shares error colour', 'Darker, moodier screens'],
+    ratios: 'White on oxblood 11.10 · Ink on gold 9.11 · Rose on ink 10.94',
+    feels: 'Warm, opulent, bold', stand: 5, trust: 3, risk: 'Error states need a distinct orange-red' },
+  { id: 'J', premium: true, name: 'Titanium & Copper', darkBtn: true,
+    idea: 'Brushed titanium greys with a copper accent, taken from the materials of the phones themselves.',
+    c: { ink: '#17181A', pri: '#3A3D42', acc: '#C4835A', bg: '#FFFFFF', sig: '#DDAE8C', tint: '#ECEDEF', priText: '#3A3D42' },
+    names: ['Carbon', 'Titanium', 'Copper', 'Rose Copper', 'White'],
+    pros: ['Feels like the hardware itself', 'Lets product photos lead', 'Works in print and signage'],
+    cons: ['Few colours to signal state', 'Copper close to orange retail brands'],
+    ratios: 'White on titanium 10.90 · Ink on copper 5.70 · Rose copper on ink 8.89',
+    feels: 'Industrial, minimal, modern', stand: 3, trust: 4, risk: 'Mostly grey screens can feel flat without good photography' }
+];
+
+var root = document.getElementById('preview');
+var BG = [
+  { id: 'onyx', name: 'Onyx', dark: true, bg: '#0B0B0C', card: '#151517', fg: '#F2F0EC', muted: '#A6A39C', line: '#2A2A2D', line2: '#3B3B3F', phone: '#232326' },
+  { id: 'midnight', name: 'Midnight', dark: true, bg: '#0C1320', card: '#141D2E', fg: '#EEF1F4', muted: '#9AA6B2', line: '#24304A', line2: '#34425E', phone: '#1E2A40' },
+  { id: 'graphite', name: 'Graphite', dark: true, bg: '#17181C', card: '#212227', fg: '#F1F1EF', muted: '#A3A6AD', line: '#2F3137', line2: '#41444C', phone: '#2B2D33' },
+  { id: 'white', name: 'White', dark: false, bg: '#FFFFFF', card: '#FFFFFF', fg: null, muted: '#5B6672', line: '#E2E6EA', line2: '#D5DBE0', phone: null }
+];
+var cur = { pal: P[0], bg: BG[0] };
+function apply(o, g) {
+  o = o || cur.pal; g = g || cur.bg; cur.pal = o; cur.bg = g;
+  var s = root.style, c = o.c;
+  var set = function (k, v) { s.setProperty(k, v); };
+  set('--p-ink', c.ink); set('--p-pri', c.pri); set('--p-acc', c.acc);
+  if (g.dark && o.darkBtn) { set('--p-pri-btn', c.sig); set('--p-pri-fg', c.ink); }
+  else { set('--p-pri-btn', c.pri); set('--p-pri-fg', o.priFg || '#FFFFFF'); }
+  set('--s-bg', g.bg); set('--s-card', g.card); set('--s-fg', g.fg || c.ink); set('--s-muted', g.muted);
+  set('--s-line', g.line); set('--s-line2', g.line2);
+  set('--s-phone', g.phone || c.ink); set('--s-tile', g.dark ? g.phone : c.ink);
+  if (g.dark) {
+    set('--s-hl', c.sig);
+    set('--s-tint', 'color-mix(in srgb, ' + c.sig + ' 16%, ' + g.card + ')');
+    set('--s-warr', 'color-mix(in srgb, ' + c.acc + ' 22%, ' + g.card + ')');
+  } else {
+    set('--s-hl', c.priText);
+    set('--s-tint', c.tint);
+    set('--s-warr', 'color-mix(in srgb, ' + c.acc + ' 24%, #FFFFFF)');
+  }
+  document.querySelectorAll('#switch button, #switch-prem button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.id === o.id ? 'true' : 'false'); });
+  document.querySelectorAll('#switch-bg button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.id === g.id ? 'true' : 'false'); });
+  document.querySelectorAll('.opt').forEach(function (el) { el.classList.toggle('sel', el.dataset.id === o.id); });
+  try { localStorage.setItem('em-palette-v2', o.id); localStorage.setItem('em-bg-v2', g.id); } catch (e) {}
+}
+var sb = document.getElementById('switch-bg');
+BG.forEach(function (g) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.dataset.id = g.id; b.id = 'bg-' + g.id;
+  b.innerHTML = '<span class="sw-bg" style="background:' + g.bg + '"></span>' + g.name;
+  b.addEventListener('click', function () { apply(null, g); });
+  sb.appendChild(b);
+});
+function dots(c) { return '<span class="dots">' + [c.ink, c.pri, c.acc].map(function (h) { return '<i style="background:' + h + '"></i>'; }).join('') + '</span>'; }
+function meter(n) { var h = ''; for (var i = 1; i <= 5; i++) h += '<i class="' + (i <= n ? 'on' : '') + '"></i>'; return '<span class="meter" aria-label="' + n + ' of 5">' + h + '</span>'; }
+
+function isLight(h) { var r = parseInt(h.slice(1, 3), 16), g = parseInt(h.slice(3, 5), 16), b = parseInt(h.slice(5, 7), 16); return (r * 299 + g * 587 + b * 114) / 1000 > 150; }
+var sw = document.getElementById('switch'), swp = document.getElementById('switch-prem'), cmp = document.getElementById('cmp');
+P.forEach(function (o) {
+  var b = document.createElement('button');
+  b.type = 'button'; b.dataset.id = o.id; b.id = 'sw-' + o.id;
+  b.innerHTML = dots(o.c) + o.id + ' · ' + o.name;
+  b.addEventListener('click', function () { apply(o); });
+  (o.premium ? swp : sw).appendChild(b);
+  var og = document.getElementById(o.premium ? 'opts-prem' : 'opts');
+
+  var c = o.c, hexes = [c.ink, c.pri, c.acc, c.sig, c.bg];
+  var strip = hexes.map(function (h, i) {
+    return '<div style="background:' + h + ';color:' + (isLight(h) ? c.ink : '#FFFFFF') + (i === 4 ? ';box-shadow:inset 0 -1px 0 rgb(0 0 0 / .08)' : '') + '">' + o.names[i] + '<br>' + h + '</div>';
+  }).join('');
+  var el = document.createElement('article');
+  el.className = 'opt'; el.dataset.id = o.id;
+  el.innerHTML = '<div class="strip">' + strip + '</div><div class="body">' +
+    '<div class="hd"><h3>' + o.name + (o.rec ? '<span class="rec">' + (o.rec === true ? 'RECOMMENDED' : o.rec) + '</span>' : '') + '</h3><span class="letter">' + o.id + '</span></div>' +
+    '<p class="idea">' + o.idea + '</p>' +
+    '<div class="pc"><div><b>For</b><ul>' + o.pros.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></div>' +
+    '<div><b>Against</b><ul>' + o.cons.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></div></div>' +
+    '<p class="ratios">' + o.ratios + '</p>' +
+    '<button class="try" type="button" id="try-' + o.id + '">Preview on the shop ↑</button></div>';
+  el.querySelector('.try').addEventListener('click', function () { apply(o); root.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  og.appendChild(el);
+
+  var tr = document.createElement('tr');
+  tr.innerHTML = '<td><b>' + o.id + '</b> ' + o.name + '</td><td>' + o.feels + '</td><td>' + meter(o.stand) + '</td><td>' + meter(o.trust) + '</td><td>' + o.risk + '</td>';
+  cmp.appendChild(tr);
+});
+
+var start = P[5];   /* open on the premium pick */
+var startBg = BG[0]; /* Onyx */
+try {
+  var saved = localStorage.getItem('em-palette-v2'); P.forEach(function (o) { if (o.id === saved) start = o; });
+  var savedBg = localStorage.getItem('em-bg-v2'); BG.forEach(function (g) { if (g.id === savedBg) startBg = g; });
+} catch (e) {}
+apply(start, startBg);
+</script>

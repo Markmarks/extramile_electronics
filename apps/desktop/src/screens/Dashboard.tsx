@@ -71,7 +71,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
         <StatCard
           label="Awaiting fulfilment"
           icon={Inbox}
-          tone="text-violet-600"
+          tone="text-primary"
           value={data ? data.toFulfil.confirmed + data.toFulfil.packed : '—'}
           hint="Confirmed or packed"
         />
@@ -79,7 +79,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (v: View) => void }) {
           <StatCard
             label="Low stock"
             icon={AlertTriangle}
-            tone={lowStock ? 'text-amber-600' : 'text-muted-foreground'}
+            tone={lowStock ? 'text-warning' : 'text-muted-foreground'}
             value={lowStock ?? '—'}
             hint={`Variants with fewer than ${LOW_STOCK} available`}
           />

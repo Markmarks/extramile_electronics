@@ -53,7 +53,7 @@ export function Inventory() {
         <StatCard
           label="Low stock"
           icon={AlertTriangle}
-          tone={low.length ? 'text-amber-600' : 'text-muted-foreground'}
+          tone={low.length ? 'text-warning' : 'text-muted-foreground'}
           value={loading ? '—' : low.length}
           hint={`Fewer than ${LOW_STOCK_THRESHOLD} available`}
         />
@@ -123,7 +123,7 @@ export function Inventory() {
                             v.available <= 0
                               ? 'bg-destructive/10 text-destructive'
                               : isLow
-                                ? 'bg-amber-500/15 text-amber-700'
+                                ? 'bg-warning/15 text-warning'
                                 : 'bg-secondary text-foreground'
                           }`}
                         >

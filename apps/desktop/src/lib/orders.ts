@@ -19,6 +19,8 @@ export interface OrderItemRow {
   title: string;
   qty: number;
   unit_price: number; // pesewas
+  line_total: number; // pesewas, computed by the order RPC
+  warranty_months: number;
   serials: string[];
 }
 
@@ -107,7 +109,7 @@ export async function getOrderDetail(id: string): Promise<OrderDetail | null> {
   const [{ data: items }, { data: refunds }] = await Promise.all([
     supabase
       .from('order_items')
-      .select('id, sku, title, qty, unit_price, serials')
+      .select('id, sku, title, qty, unit_price, line_total, warranty_months, serials')
       .eq('order_id', id)
       .returns<OrderItemRow[]>(),
     supabase

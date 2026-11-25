@@ -9,6 +9,7 @@ import { addToCartAction } from '@/lib/cart/actions';
 import { isDemoId } from '@/lib/catalog/demo';
 import type { ProductDetail, VariantDetail } from '@/lib/catalog/queries';
 import { tintFor } from '@/lib/catalog/tint';
+import { WarrantyBadge } from './trust-badge';
 
 function variantLabel(v: VariantDetail): string {
   const vals = Object.values(v.attrs)
@@ -144,17 +145,18 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
             <span
               className={`rounded-md px-2 py-0.5 font-semibold ${
                 product.condition === 'new'
-                  ? 'bg-success/10 text-[#248A3D]'
-                  : 'bg-amber-100 text-amber-800'
+                  ? 'bg-success/10 text-success'
+                  : 'bg-warning/15 text-warning'
               }`}
             >
               {CONDITION_LABELS[product.condition]}
             </span>
+            <WarrantyBadge months={product.warrantyMonths} className="text-[13px]" />
             <span className="text-muted-foreground">{CONDITION_NOTES[product.condition]}</span>
           </p>
           {product.ratingCount > 0 && (
             <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
-              <Star className="size-3.5 fill-[#FF9500] text-[#FF9500]" aria-hidden />
+              <Star className="size-3.5 fill-warning text-warning" aria-hidden />
               <span className="font-semibold text-foreground">{product.ratingAvg.toFixed(1)}</span>
               <span>· {product.ratingCount} ratings</span>
             </p>
@@ -162,7 +164,9 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
         </div>
 
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="text-3xl font-semibold tracking-tight">{formatGHS(chosen.price)}</span>
+          <span className="font-display text-3xl font-bold tabular-nums tracking-tight">
+            {formatGHS(chosen.price)}
+          </span>
           {onSale && chosen.compareAtPrice != null && (
             <>
               <span className="text-muted-foreground line-through">
@@ -190,7 +194,7 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
                     className={`pressable rounded-xl bg-card px-4 py-3 text-left transition-shadow ${
                       active
                         ? 'ring-2 ring-primary'
-                        : 'ring-1 ring-black/[0.06] hover:ring-black/15'
+                        : 'ring-1 ring-foreground/[0.06] hover:ring-foreground/15'
                     } ${v.available <= 0 ? 'opacity-50' : ''}`}
                   >
                     <span className="block text-[15px] font-medium">{variantLabel(v)}</span>
@@ -259,7 +263,7 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
         )}
 
         {/* Assurances — grouped list */}
-        <ul className="overflow-hidden rounded-2xl bg-card text-[15px]">
+        <ul className="overflow-hidden rounded-2xl border bg-card text-[15px]">
           {[
             {
               icon: ShieldCheck,
@@ -280,7 +284,9 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
               <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground/70">
                 <Icon className="size-[18px]" aria-hidden />
               </span>
-              <div className={`flex-1 py-3 pr-4 ${i > 0 ? 'border-t border-black/[0.06]' : ''}`}>
+              <div
+                className={`flex-1 py-3 pr-4 ${i > 0 ? 'border-t border-foreground/[0.06]' : ''}`}
+              >
                 <p className="font-medium">{title}</p>
                 <p className="text-[13px] text-muted-foreground">{sub}</p>
               </div>
@@ -288,7 +294,7 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
           ))}
         </ul>
 
-        <p className="text-xs text-muted-foreground">SKU {chosen.sku}</p>
+        <p className="font-mono text-xs text-muted-foreground">SKU {chosen.sku}</p>
       </div>
     </div>
   );

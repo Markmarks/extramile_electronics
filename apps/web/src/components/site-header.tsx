@@ -1,3 +1,4 @@
+import { Logo } from '@extramile/ui';
 import { Package, Search, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { CartCount } from '@/components/cart/cart-count';
@@ -8,16 +9,10 @@ const navItem =
 /** Static header — no cookies here, so pages keep their static/ISR rendering. */
 export function SiteHeader() {
   return (
-    <header className="glass sticky top-0 z-40 border-b border-black/5">
+    <header className="sticky top-0 z-40 border-b bg-background print:hidden">
       <div className="container flex h-14 items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2 text-[17px] font-semibold tracking-tight">
-          <span className="flex size-7 items-center justify-center rounded-md bg-foreground text-[13px] font-bold text-background">
-            E
-          </span>
-          <span className="whitespace-nowrap">
-            ExtraMile{' '}
-            <span className="hidden text-muted-foreground min-[400px]:inline">Electronics</span>
-          </span>
+        <Link href="/" aria-label="ExtraMile Electronics home" className="text-[19px]">
+          <Logo markClassName="h-7" />
         </Link>
         <nav className="flex items-center gap-1">
           <Link href="/search" className={navItem} aria-label="Search">

@@ -41,7 +41,7 @@ export default async function CartPage() {
       </p>
 
       {hasStale && (
-        <p className="mb-4 rounded-2xl bg-[#FF9500]/10 px-4 py-3 text-[15px] text-[#A35400]">
+        <p className="mb-4 rounded-2xl bg-warning/10 px-4 py-3 text-[15px] text-warning">
           Some prices changed since you added them. The totals below are current.
         </p>
       )}

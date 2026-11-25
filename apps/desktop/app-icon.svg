@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- ExtraMile app icon: square crop of the mark; the extra stroke bleeds off the right edge.
+       Source for app-icon.png → `pnpm tauri icon app-icon.png`. See docs/brand §04. -->
+  <rect width="48" height="48" rx="11" fill="#0A1120"/>
+  <rect x="11" y="11" width="6.5" height="26" rx="1.5" fill="#FFFFFF"/>
+  <rect x="11" y="11" width="21" height="6.5" rx="1.5" fill="#FFFFFF"/>
+  <rect x="11" y="30.5" width="21" height="6.5" rx="1.5" fill="#FFFFFF"/>
+  <path d="M12.5 20.75H48v6.5H12.5a1.5 1.5 0 0 1-1.5-1.5v-3.5a1.5 1.5 0 0 1 1.5-1.5z" fill="#4470D6"/>
+</svg>

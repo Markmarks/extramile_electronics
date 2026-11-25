@@ -1,4 +1,4 @@
-import { formatGHS, STAFF_FULFILMENT_FLOW, type OrderStatus } from '@extramile/core';
+import { formatGHS } from '@extramile/core';
 import { Check, FileText, Star } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -6,14 +6,17 @@ import { notFound } from 'next/navigation';
 import { StatusPill } from '@/components/account/status-pill';
 import { Breadcrumbs } from '@/components/catalog/breadcrumbs';
 import { getUserOrder } from '@/lib/orders/queries';
+import { trackerProgress, trackerStops } from '@/lib/orders/tracker';
 import { getReviewableItems, type ReviewableItem } from '@/lib/reviews/queries';
 
 export const metadata: Metadata = { title: 'Order' };
 export const dynamic = 'force-dynamic';
 
+/**
+ * The "mile line": the logo's extra stroke drawn as a road. Done stops are filled, the
+ * current stop is a ringed dot, later stops are hairline (brand book §07).
+ */
 function Timeline({ status }: { status: string }) {
-  const steps = STAFF_FULFILMENT_FLOW;
-  const currentIdx = steps.indexOf(status as OrderStatus);
   const cancelled = status === 'cancelled' || status === 'refunded' || status === 'oversold';
   if (cancelled) {
     return (
@@ -23,36 +26,51 @@ function Timeline({ status }: { status: string }) {
       </div>
     );
   }
+  const stops = trackerStops(status);
+  const progress = trackerProgress(stops);
+  const n = stops.length;
   return (
-    <ol className="panel flex items-start">
-      {steps.map((step, i) => {
-        const done = currentIdx >= i;
-        return (
-          <li key={step} className="relative flex flex-1 flex-col items-center gap-2 text-center">
-            {i > 0 && (
-              <span
-                className={`absolute right-1/2 top-3.5 h-0.5 w-full -translate-y-1/2 ${
-                  done ? 'bg-primary' : 'bg-black/[0.08]'
-                }`}
-                aria-hidden
-              />
-            )}
+    <div className="panel">
+      <ol className="relative grid" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+        {/* Track runs between the first and last dot centres. */}
+        <span
+          className="absolute top-[7px] h-0.5 bg-border"
+          style={{ left: `${50 / n}%`, right: `${50 / n}%` }}
+          aria-hidden
+        />
+        <span
+          className="absolute top-[7px] h-0.5 bg-primary transition-[width] duration-500"
+          style={{ left: `${50 / n}%`, width: `${progress * (100 - 100 / n)}%` }}
+          aria-hidden
+        />
+        {stops.map((stop) => (
+          <li
+            key={stop.status}
+            aria-current={stop.state === 'current' ? 'step' : undefined}
+            className="relative flex flex-col items-center gap-2 text-center"
+          >
             <span
-              className={`relative flex size-7 items-center justify-center rounded-full text-white ${
-                done ? 'bg-primary' : 'bg-black/[0.12]'
+              className={`flex size-4 items-center justify-center rounded-full ${
+                stop.state === 'done'
+                  ? 'bg-primary text-primary-foreground'
+                  : stop.state === 'current'
+                    ? 'bg-card shadow-[inset_0_0_0_3px_hsl(var(--primary)),0_0_0_4px_hsl(var(--primary)/0.2)]'
+                    : 'bg-card shadow-[inset_0_0_0_2px_hsl(var(--border))]'
               }`}
             >
-              {done ? <Check className="size-4" aria-hidden /> : null}
+              {stop.state === 'done' ? (
+                <Check className="size-2.5" strokeWidth={4} aria-hidden />
+              ) : null}
             </span>
             <span
-              className={`text-[12px] font-medium capitalize ${done ? '' : 'text-muted-foreground'}`}
+              className={`text-[12px] font-semibold ${stop.state === 'todo' ? 'text-muted-foreground' : ''}`}
             >
-              {step.replace(/_/g, ' ')}
+              {stop.label}
             </span>
           </li>
-        );
-      })}
-    </ol>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -102,7 +120,7 @@ export default async function OrderDetailPage({
         />
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">{order.orderNumber}</h1>
+            <h1 className="font-mono text-2xl font-semibold tracking-tight">{order.orderNumber}</h1>
             <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
               Placed {new Date(order.createdAt).toLocaleString()}
               <StatusPill value={order.paymentStatus} />
@@ -128,7 +146,7 @@ export default async function OrderDetailPage({
                 {item.warrantyMonths > 0 && ` · ${item.warrantyMonths}-mo warranty`}
               </p>
               {item.serials.length > 0 && (
-                <p className="text-[13px] text-muted-foreground">
+                <p className="font-mono text-[12px] text-muted-foreground">
                   IMEI/Serial: {item.serials.join(', ')}
                 </p>
               )}
@@ -154,9 +172,9 @@ export default async function OrderDetailPage({
             <dd>−{formatGHS(order.discount)}</dd>
           </div>
         )}
-        <div className="flex justify-between border-t border-black/[0.06] pt-3 text-[17px] font-bold">
+        <div className="flex justify-between border-t border-foreground/[0.06] pt-3 text-[17px] font-bold">
           <dt>Total</dt>
-          <dd>{formatGHS(order.total)}</dd>
+          <dd className="font-display tabular-nums tracking-tight">{formatGHS(order.total)}</dd>
         </div>
         {order.payment?.reference && (
           <p className="pt-1 text-[13px] text-muted-foreground">

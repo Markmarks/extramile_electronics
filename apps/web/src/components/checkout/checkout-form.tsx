@@ -281,7 +281,7 @@ export function CheckoutForm({
                     className={`pressable rounded-2xl px-4 py-3 text-left transition-shadow ${
                       active
                         ? 'bg-primary/[0.06] ring-2 ring-primary'
-                        : 'bg-black/[0.03] ring-1 ring-black/[0.06] hover:ring-black/15'
+                        : 'bg-foreground/[0.03] ring-1 ring-foreground/[0.06] hover:ring-foreground/15'
                     }`}
                   >
                     <span className="flex justify-between gap-2 text-[15px] font-medium">
@@ -348,9 +348,9 @@ export function CheckoutForm({
               <dd>−{formatGHS(quote.discount)}</dd>
             </div>
           )}
-          <div className="flex justify-between border-t border-black/[0.06] pt-3 text-[17px] font-bold">
+          <div className="flex justify-between border-t border-foreground/[0.06] pt-3 text-[17px] font-bold">
             <dt>Total</dt>
-            <dd>{formatGHS(quote.total)}</dd>
+            <dd className="font-display tabular-nums tracking-tight">{formatGHS(quote.total)}</dd>
           </div>
           {selectedZone && (
             <p className="text-[13px] text-muted-foreground">
@@ -370,7 +370,7 @@ export function CheckoutForm({
 
         <button
           type="button"
-          className="btn-primary w-full"
+          className="btn-pay w-full"
           onClick={placeOrder}
           disabled={placing || refreshing}
         >

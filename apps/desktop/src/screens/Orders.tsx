@@ -144,12 +144,27 @@ export function Orders() {
 
   async function print() {
     if (!detail) return;
+    // Thermal receipt in the brand voice (docs/brand §08). ESC/POS prints each line feed as
+    // a new line, so the footer carries serials and warranty per item.
+    const footer = [
+      ...detail.items.flatMap((i) => [
+        ...(i.serials.length ? [`${i.sku} IMEI/Serial ${i.serials.join(', ')}`] : []),
+        ...(i.warranty_months > 0 ? [`${i.sku} ${i.warranty_months}-month warranty`] : []),
+      ]),
+      '',
+      'Keep this receipt. It is your warranty record.',
+      'ExtraMile Electronics, Accra',
+    ].join('\n');
     const dto: ReceiptDto = {
-      header: 'ExtraMile Electronics',
+      header: 'extramile',
       order_number: detail.order_number,
-      lines: detail.items.map((i) => ({ name: i.title, qty: i.qty, line_total: '' })),
+      lines: detail.items.map((i) => ({
+        name: i.title,
+        qty: i.qty,
+        line_total: formatGHS(i.line_total),
+      })),
       total: formatGHS(detail.total),
-      warranty: 'Warranty per product terms',
+      warranty: footer,
     };
     try {
       const path = await printReceipt(dto, 'Spool file (default)');
@@ -349,7 +364,7 @@ export function Orders() {
                     )}
                   </p>
                   {detail.notes && (
-                    <p className="mt-2 rounded-lg bg-amber-500/10 px-3 py-2 text-[13px] text-amber-800">
+                    <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-[13px] text-warning">
                       Note: {detail.notes}
                     </p>
                   )}
@@ -414,7 +429,7 @@ export function Orders() {
                           {it.serials.length > 0 ? (
                             <span className="font-mono text-xs">{it.serials.join(', ')}</span>
                           ) : (
-                            <span className="text-xs text-amber-700">Not captured</span>
+                            <span className="text-xs text-warning">Not captured</span>
                           )}
                         </td>
                         <td className="text-right">

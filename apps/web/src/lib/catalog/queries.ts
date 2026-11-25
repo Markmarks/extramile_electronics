@@ -33,6 +33,8 @@ export interface ProductListItem {
   imageUrl: string | null;
   imageAlt: string | null;
   inStock: boolean;
+  /** 0 = no manufacturer/store warranty on record. */
+  warrantyMonths: number;
 }
 
 export interface VariantDetail {
@@ -179,6 +181,7 @@ async function hydrateListItems(
       imageUrl: productImageUrl(img?.storage_path),
       imageAlt: img?.alt ?? r.title,
       inStock: inStock.get(r.id) ?? false,
+      warrantyMonths: r.warranty_months,
     };
   });
 }

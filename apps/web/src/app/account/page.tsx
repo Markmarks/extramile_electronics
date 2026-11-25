@@ -41,7 +41,7 @@ export default async function AccountPage() {
           <Link
             key={href}
             href={href}
-            className="flex items-center gap-3 px-4 py-3 text-[17px] transition-colors hover:bg-black/[0.03]"
+            className="flex items-center gap-3 px-4 py-3 text-[17px] transition-colors hover:bg-foreground/[0.03]"
           >
             <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-foreground/70">
               <Icon className="size-[18px]" aria-hidden />
@@ -55,7 +55,7 @@ export default async function AccountPage() {
       <form action="/auth/signout" method="post" className="grouped">
         <button
           type="submit"
-          className="flex w-full items-center justify-center gap-2 px-4 py-3 text-[17px] font-medium text-destructive transition-colors hover:bg-black/[0.03]"
+          className="flex w-full items-center justify-center gap-2 px-4 py-3 text-[17px] font-medium text-destructive transition-colors hover:bg-foreground/[0.03]"
         >
           <LogOut className="size-[18px]" aria-hidden /> Sign out
         </button>
