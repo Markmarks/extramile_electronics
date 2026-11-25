@@ -1,5 +1,19 @@
-import { CONDITION_LABELS, CONDITION_NOTES, formatGHS } from '@extramile/core';
-import { Eye, EyeOff, ImagePlus, Package, Plus, Search, Tags, Trash2, X } from 'lucide-react';
+import { CONDITION_LABELS, CONDITION_NOTES, formatGHS, specKey, specLabel } from '@extramile/core';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  ImagePlus,
+  Package,
+  Pencil,
+  Plus,
+  Search,
+  Tags,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { cedisInputToPesewas, Field, Modal, pesewasToInput } from '../components/Modal';
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { cleanSpecs, SpecsEditor } from '../components/SpecsEditor';
 import { EmptyState, Notice, PageHeader } from '../components/ui';
@@ -9,21 +23,33 @@ import {
   createCategory,
   createProduct,
   createVariant,
+  deleteBrand,
+  deleteCategory,
   deleteProductImage,
   imageUrl,
   listBrands,
   listCategories,
   listProducts,
+  moveImage,
+  renameBrand,
+  setImageAlt,
   setProductActive,
   setProductCondition,
+  updateCategory,
+  updateProductDetails,
   updateProductSpecs,
   updateVariant,
+  updateVariantDetails,
   uploadProductImage,
   type Brand,
   type Category,
+  type CategoryPatch,
   type Condition,
+  type ProductDetails,
   type ProductRow,
   type Specs,
+  type VariantDetails,
+  type VariantRow as Variant,
 } from '../lib/catalogue';
 
 type StatusFilter = 'all' | 'published' | 'draft';
@@ -211,6 +237,20 @@ export function Catalogue() {
             <ProductEditor
               key={selected.id}
               product={selected}
+              categories={categories}
+              brands={brands}
+              onSaveDetails={(d) =>
+                report(() => updateProductDetails(selected.id, d), 'Details saved.')()
+              }
+              onSaveVariantDetails={(id, d) =>
+                report(() => updateVariantDetails(id, d), 'Variant details saved.')()
+              }
+              onMoveImage={(id, dir) =>
+                report(() => moveImage(selected.images, id, dir), 'Image order saved.')()
+              }
+              onSetImageAlt={(id, alt) =>
+                report(() => setImageAlt(id, alt), 'Image description saved.')()
+              }
               schema={categories.find((c) => c.id === selected.category_id)?.spec_schema ?? {}}
               onSaveSpecs={(specs) =>
                 report(() => updateProductSpecs(selected.id, specs), 'Tech specs saved.')()
@@ -275,6 +315,10 @@ export function Catalogue() {
             brands={brands}
             onAddCategory={(n) => report(() => createCategory(n), 'Category added.')()}
             onAddBrand={(n) => report(() => createBrand(n), 'Brand added.')()}
+            onUpdateCategory={(id, p) => report(() => updateCategory(id, p), 'Category saved.')()}
+            onDeleteCategory={(id) => report(() => deleteCategory(id), 'Category deleted.')()}
+            onRenameBrand={(id, n) => report(() => renameBrand(id, n), 'Brand renamed.')()}
+            onDeleteBrand={(id) => report(() => deleteBrand(id), 'Brand deleted.')()}
           />
         </Dialog>
       )}
@@ -319,62 +363,337 @@ function Taxonomy({
   brands,
   onAddCategory,
   onAddBrand,
+  onUpdateCategory,
+  onDeleteCategory,
+  onRenameBrand,
+  onDeleteBrand,
 }: {
   categories: Category[];
   brands: Brand[];
   onAddCategory: (name: string) => void;
   onAddBrand: (name: string) => void;
+  onUpdateCategory: (id: string, patch: CategoryPatch) => void;
+  onDeleteCategory: (id: string) => void;
+  onRenameBrand: (id: string, name: string) => void;
+  onDeleteBrand: (id: string) => void;
 }) {
+  const [tab, setTab] = useState<'categories' | 'brands'>('categories');
+  const tabs = [
+    ['categories', `Categories (${categories.length})`],
+    ['brands', `Brands (${brands.length})`],
+  ] as const;
   return (
-    <div className="grid gap-5 sm:grid-cols-2">
-      <TaxonomyList title="Categories" items={categories} onAdd={onAddCategory} />
-      <TaxonomyList title="Brands" items={brands} onAdd={onAddBrand} />
+    <div className="space-y-3">
+      <div className="inline-flex rounded-lg border bg-secondary/50 p-0.5">
+        {tabs.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+              tab === id ? 'bg-card shadow-sm' : 'text-muted-foreground'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {tab === 'categories' ? (
+        <>
+          <AddRow placeholder="New category" onAdd={onAddCategory} />
+          <ul className="divide-y rounded-lg border">
+            {categories.map((c) => (
+              <CategoryItem
+                key={c.id}
+                category={c}
+                categories={categories}
+                onSave={(p) => onUpdateCategory(c.id, p)}
+                onDelete={() => onDeleteCategory(c.id)}
+              />
+            ))}
+          </ul>
+        </>
+      ) : (
+        <>
+          <AddRow placeholder="New brand" onAdd={onAddBrand} />
+          <ul className="divide-y rounded-lg border">
+            {brands.map((b) => (
+              <NameItem
+                key={b.id}
+                name={b.name}
+                onRename={(n) => onRenameBrand(b.id, n)}
+                onDelete={() => onDeleteBrand(b.id)}
+              />
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
 
-function TaxonomyList({
-  title,
-  items,
-  onAdd,
-}: {
-  title: string;
-  items: { id: string; name: string }[];
-  onAdd: (name: string) => void;
-}) {
+function AddRow({ placeholder, onAdd }: { placeholder: string; onAdd: (name: string) => void }) {
   const [name, setName] = useState('');
   return (
-    <div className="space-y-2">
-      <p className="label">
-        {title} ({items.length})
-      </p>
-      <form
-        className="flex gap-1.5"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!name.trim()) return;
-          onAdd(name.trim());
-          setName('');
-        }}
+    <form
+      className="flex gap-1.5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!name.trim()) return;
+        onAdd(name.trim());
+        setName('');
+      }}
+    >
+      <input
+        className="input"
+        placeholder={placeholder}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <button className="btn-secondary" disabled={!name.trim()}>
+        <Plus className="size-3.5" aria-hidden /> Add
+      </button>
+    </form>
+  );
+}
+
+/** Inline rename + two-step delete for a brand. */
+function NameItem({
+  name,
+  onRename,
+  onDelete,
+}: {
+  name: string;
+  onRename: (name: string) => void;
+  onDelete: () => void;
+}) {
+  const [value, setValue] = useState(name);
+  const [confirm, setConfirm] = useState(false);
+  return (
+    <li className="flex items-center gap-1.5 p-2">
+      <input
+        className="input"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        aria-label="Brand name"
+      />
+      <button
+        type="button"
+        className="btn-secondary"
+        disabled={!value.trim() || value === name}
+        onClick={() => onRename(value)}
       >
-        <input
-          className="input"
-          placeholder={`New ${title.toLowerCase().replace(/s$/, '')}`}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <button className="btn-secondary" disabled={!name.trim()}>
-          Add
-        </button>
-      </form>
-      <div className="flex flex-wrap gap-1">
-        {items.map((i) => (
-          <span key={i.id} className="badge bg-secondary font-medium normal-case text-foreground">
-            {i.name}
+        Save
+      </button>
+      <button
+        type="button"
+        className={confirm ? 'btn-secondary text-destructive' : 'btn-ghost'}
+        onClick={() => (confirm ? onDelete() : setConfirm(true))}
+        title="Only possible when no product uses it"
+        aria-label={`Delete ${name}`}
+      >
+        <Trash2 className="size-3.5" aria-hidden /> {confirm ? 'Delete?' : ''}
+      </button>
+    </li>
+  );
+}
+
+type SpecFieldType = 'string' | 'number' | 'boolean';
+interface SpecFieldRow {
+  key: string;
+  type: SpecFieldType;
+  facet: boolean;
+}
+
+function specFieldList(schema: Record<string, unknown>): SpecFieldRow[] {
+  return Object.entries(schema).map(([key, v]) => {
+    const o = (v ?? {}) as { type?: unknown; facet?: unknown };
+    const type: SpecFieldType = o.type === 'number' || o.type === 'boolean' ? o.type : 'string';
+    return { key, type, facet: o.facet === true };
+  });
+}
+
+function specSchemaFrom(fields: SpecFieldRow[]): Record<string, unknown> {
+  return Object.fromEntries(
+    fields.map((f) => [f.key, f.facet ? { type: f.type, facet: true } : { type: f.type }]),
+  );
+}
+
+function CategoryItem({
+  category,
+  categories,
+  onSave,
+  onDelete,
+}: {
+  category: Category;
+  categories: Category[];
+  onSave: (patch: CategoryPatch) => void;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(category.name);
+  const [parent, setParent] = useState(category.parent_id ?? '');
+  const [order, setOrder] = useState(String(category.sort_order));
+  const [fields, setFields] = useState(() => specFieldList(category.spec_schema));
+  const [newField, setNewField] = useState('');
+  const [confirm, setConfirm] = useState(false);
+  const parentName = categories.find((c) => c.id === category.parent_id)?.name;
+  const setField = (i: number, patch: Partial<SpecFieldRow>) =>
+    setFields(fields.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+
+  return (
+    <li className="p-2">
+      <div className="flex items-center gap-2">
+        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(!open)}>
+          <span
+            className={`font-medium ${category.is_active ? '' : 'text-muted-foreground line-through'}`}
+          >
+            {category.name}
           </span>
-        ))}
+          <span className="ml-2 text-[11px] text-muted-foreground">
+            {parentName ? `in ${parentName} · ` : ''}
+            {fields.length} spec field{fields.length === 1 ? '' : 's'}
+            {category.is_active ? '' : ' · hidden'}
+          </span>
+        </button>
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={() => onSave({ is_active: !category.is_active })}
+          title={category.is_active ? 'Hide from the shop' : 'Show on the shop'}
+          aria-label={category.is_active ? `Hide ${category.name}` : `Show ${category.name}`}
+        >
+          {category.is_active ? (
+            <EyeOff className="size-3.5" aria-hidden />
+          ) : (
+            <Eye className="size-3.5" aria-hidden />
+          )}
+        </button>
+        <button
+          type="button"
+          className="btn-ghost"
+          onClick={() => setOpen(!open)}
+          aria-label={`Edit ${category.name}`}
+        >
+          <Pencil className="size-3.5" aria-hidden />
+        </button>
       </div>
-    </div>
+      {open && (
+        <div className="mt-2 space-y-3 rounded-lg bg-secondary/40 p-3">
+          <div className="grid gap-2 sm:grid-cols-[1fr_1fr_5rem]">
+            <Field label="Name">
+              <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+            </Field>
+            <Field label="Inside">
+              <select className="input" value={parent} onChange={(e) => setParent(e.target.value)}>
+                <option value="">Top level</option>
+                {categories
+                  .filter((c) => c.id !== category.id)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+              </select>
+            </Field>
+            <Field label="Order">
+              <input
+                className="input"
+                type="number"
+                value={order}
+                onChange={(e) => setOrder(e.target.value)}
+              />
+            </Field>
+          </div>
+          <div>
+            <p className="label mb-1">Spec fields for products in this category</p>
+            <ul className="space-y-1">
+              {fields.map((f, i) => (
+                <li key={f.key} className="flex items-center gap-1.5 text-[13px]">
+                  <span className="min-w-0 flex-1 truncate">{specLabel(f.key)}</span>
+                  <select
+                    className="input h-7 w-28"
+                    value={f.type}
+                    onChange={(e) => setField(i, { type: e.target.value as SpecFieldType })}
+                    aria-label={`${f.key} type`}
+                  >
+                    <option value="string">Text</option>
+                    <option value="number">Number</option>
+                    <option value="boolean">Yes / no</option>
+                  </select>
+                  <label
+                    className="flex items-center gap-1 text-[11px]"
+                    title="Customers can filter by it"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={f.facet}
+                      onChange={(e) => setField(i, { facet: e.target.checked })}
+                    />
+                    Filter
+                  </label>
+                  <button
+                    type="button"
+                    className="btn-ghost h-7 w-7 px-0"
+                    aria-label={`Remove ${f.key}`}
+                    onClick={() => setFields(fields.filter((_, j) => j !== i))}
+                  >
+                    <X className="size-3.5" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-1.5 flex gap-1.5">
+              <input
+                className="input h-8"
+                placeholder="New field, e.g. Refresh rate (Hz)"
+                value={newField}
+                onChange={(e) => setNewField(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={!specKey(newField) || fields.some((f) => f.key === specKey(newField))}
+                onClick={() => {
+                  setFields([...fields, { key: specKey(newField), type: 'string', facet: false }]);
+                  setNewField('');
+                }}
+              >
+                Add field
+              </button>
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Removing a field doesn’t delete values already saved on products; they show as extra
+              specs.
+            </p>
+          </div>
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              className={confirm ? 'btn-secondary text-destructive' : 'btn-ghost text-destructive'}
+              onClick={() => (confirm ? onDelete() : setConfirm(true))}
+            >
+              <Trash2 className="size-3.5" aria-hidden /> {confirm ? 'Yes, delete it' : 'Delete'}
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={!name.trim() || !Number.isInteger(Number(order))}
+              onClick={() =>
+                onSave({
+                  name: name.trim(),
+                  parent_id: parent || null,
+                  sort_order: Number(order),
+                  spec_schema: specSchemaFrom(fields),
+                })
+              }
+            >
+              Save category
+            </button>
+          </div>
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -585,6 +904,12 @@ function ProductEditor({
   onToggleVariant,
   onUploadImage,
   onDeleteImage,
+  categories,
+  brands,
+  onSaveDetails,
+  onSaveVariantDetails,
+  onMoveImage,
+  onSetImageAlt,
 }: {
   product: ProductRow;
   schema: Record<string, unknown>;
@@ -596,23 +921,46 @@ function ProductEditor({
   onToggleVariant: (id: string, active: boolean) => void;
   onUploadImage: (file: File) => void;
   onDeleteImage: (id: string, storagePath: string) => void;
+  categories: Category[];
+  brands: Brand[];
+  onSaveDetails: (d: ProductDetails) => void;
+  onSaveVariantDetails: (id: string, d: VariantDetails) => void;
+  onMoveImage: (id: string, dir: -1 | 1) => void;
+  onSetImageAlt: (id: string, alt: string) => void;
 }) {
   const [sku, setSku] = useState('');
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('0');
   const [specs, setSpecs] = useState<Specs>(product.specs);
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [editingVariant, setEditingVariant] = useState<Variant | null>(null);
+  const [editingAlt, setEditingAlt] = useState<{ id: string; alt: string } | null>(null);
   const specsDirty =
     JSON.stringify(cleanSpecs(specs)) !== JSON.stringify(cleanSpecs(product.specs));
 
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 border-b p-5">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-lg font-semibold">{product.title}</p>
           <p className="mt-0.5 text-muted-foreground">
             {product.category ?? 'No category'} · {product.brand ?? 'No brand'}
+            {product.model ? ` · ${product.model}` : ''} ·{' '}
+            {product.warranty_months
+              ? `${product.warranty_months}-month warranty${product.warranty_provider ? ` (${product.warranty_provider})` : ''}`
+              : 'No warranty'}
           </p>
+          {product.description ? (
+            <p className="mt-1.5 line-clamp-2 text-[13px] text-muted-foreground">
+              {product.description}
+            </p>
+          ) : (
+            <p className="mt-1.5 text-[13px] text-amber-700">No description yet.</p>
+          )}
         </div>
+        <button type="button" className="btn-secondary" onClick={() => setEditingDetails(true)}>
+          <Pencil className="size-3.5" aria-hidden /> Edit details
+        </button>
         <button
           type="button"
           className={product.is_active ? 'btn-secondary' : 'btn-primary'}
@@ -662,27 +1010,62 @@ function ProductEditor({
       <div className="border-b p-5">
         <div className="mb-2 flex items-center justify-between">
           <p className="card-title">Images</p>
-          <p className="text-[11px] text-muted-foreground">PNG, JPEG, WebP or AVIF · max 2 MB</p>
+          <p className="text-[11px] text-muted-foreground">
+            First image is the main photo · PNG, JPEG, WebP or AVIF · max 2 MB
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {product.images.map((img) => (
-            <div
-              key={img.id}
-              className="group relative size-24 overflow-hidden rounded-lg border bg-secondary/40"
-            >
-              <img
-                src={imageUrl(img.storage_path)}
-                alt=""
-                className="size-full object-contain p-1"
-              />
-              <button
-                type="button"
-                title="Remove image"
-                onClick={() => onDeleteImage(img.id, img.storage_path)}
-                className="absolute right-1 top-1 hidden size-6 items-center justify-center rounded-md bg-card/90 text-destructive shadow-sm group-hover:flex"
-              >
-                <Trash2 className="size-3.5" aria-hidden />
-              </button>
+          {product.images.map((img, i) => (
+            <div key={img.id} className="w-24 space-y-1">
+              <div className="group relative size-24 overflow-hidden rounded-lg border bg-secondary/40">
+                <img
+                  src={imageUrl(img.storage_path)}
+                  alt={img.alt ?? ''}
+                  className="size-full object-contain p-1"
+                />
+                {i === 0 && (
+                  <span className="absolute left-1 top-1 rounded bg-foreground/80 px-1 text-[10px] font-medium text-background">
+                    Main
+                  </span>
+                )}
+                <button
+                  type="button"
+                  title="Remove image"
+                  aria-label="Remove image"
+                  onClick={() => onDeleteImage(img.id, img.storage_path)}
+                  className="absolute right-1 top-1 hidden size-6 items-center justify-center rounded-md bg-card/90 text-destructive shadow-sm group-hover:flex"
+                >
+                  <Trash2 className="size-3.5" aria-hidden />
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  className="btn-ghost h-6 w-6 px-0"
+                  disabled={i === 0}
+                  aria-label="Move image left"
+                  onClick={() => onMoveImage(img.id, -1)}
+                >
+                  <ChevronLeft className="size-3.5" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  className={`h-6 truncate px-1 text-[11px] ${img.alt ? 'text-muted-foreground' : 'text-amber-700'}`}
+                  title={img.alt ?? 'Add a description for screen readers and search'}
+                  onClick={() => setEditingAlt({ id: img.id, alt: img.alt ?? '' })}
+                >
+                  {img.alt ? 'Alt ✓' : 'Add alt'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost h-6 w-6 px-0"
+                  disabled={i === product.images.length - 1}
+                  aria-label="Move image right"
+                  onClick={() => onMoveImage(img.id, 1)}
+                >
+                  <ChevronRight className="size-3.5" aria-hidden />
+                </button>
+              </div>
             </div>
           ))}
           <label
@@ -748,12 +1131,10 @@ function ProductEditor({
               {product.variants.map((v) => (
                 <VariantRow
                   key={v.id}
-                  sku={v.sku}
-                  price={v.price}
-                  stock={v.stock}
-                  active={v.is_active}
+                  variant={v}
                   onSave={(p, s) => onSaveVariant(v.id, p, s)}
                   onToggle={() => onToggleVariant(v.id, !v.is_active)}
+                  onDetails={() => setEditingVariant(v)}
                 />
               ))}
               <tr className="bg-secondary/30 hover:bg-secondary/30">
@@ -805,25 +1186,81 @@ function ProductEditor({
           </table>
         </div>
       </div>
+
+      {editingDetails && (
+        <Modal title={`Edit ${product.title}`} onClose={() => setEditingDetails(false)} wide>
+          <ProductDetailsForm
+            product={product}
+            categories={categories}
+            brands={brands}
+            onSave={(d) => {
+              setEditingDetails(false);
+              onSaveDetails(d);
+            }}
+          />
+        </Modal>
+      )}
+      {editingVariant && (
+        <Modal title={`Variant ${editingVariant.sku}`} onClose={() => setEditingVariant(null)}>
+          <VariantDetailsForm
+            variant={editingVariant}
+            onSave={(d) => {
+              const id = editingVariant.id;
+              setEditingVariant(null);
+              onSaveVariantDetails(id, d);
+            }}
+          />
+        </Modal>
+      )}
+      {editingAlt && (
+        <Modal title="Image description" onClose={() => setEditingAlt(null)}>
+          <form
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSetImageAlt(editingAlt.id, editingAlt.alt);
+              setEditingAlt(null);
+            }}
+          >
+            <Field
+              label="Describe the photo"
+              hint="Read aloud to blind customers and used by search engines, e.g. “iPhone 15 in blue, front and back”."
+            >
+              <input
+                className="input"
+                autoFocus
+                maxLength={200}
+                value={editingAlt.alt}
+                onChange={(e) => setEditingAlt({ ...editingAlt, alt: e.target.value })}
+              />
+            </Field>
+            <div className="flex justify-end">
+              <button type="submit" className="btn-primary">
+                Save description
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }
 
 function VariantRow({
-  sku,
-  price,
-  stock,
-  active,
+  variant,
   onSave,
   onToggle,
+  onDetails,
 }: {
-  sku: string;
-  price: number;
-  stock: number;
-  active: boolean;
+  variant: Variant;
   onSave: (priceCedis: number, stock: number) => void;
   onToggle: () => void;
+  onDetails: () => void;
 }) {
+  const { sku, price, stock, is_active: active } = variant;
+  const options = Object.entries(variant.attrs)
+    .map(([k, v]) => `${specLabel(k)}: ${v}`)
+    .join(' · ');
   const [p, setP] = useState((price / 100).toFixed(2));
   const [s, setS] = useState(String(stock));
   const dirty = p !== (price / 100).toFixed(2) || s !== String(stock);
@@ -832,7 +1269,15 @@ function VariantRow({
     <tr className={active ? '' : 'opacity-60'}>
       <td>
         <p className="font-mono text-xs">{sku}</p>
-        <p className="text-[11px] text-muted-foreground">Now {formatGHS(price)}</p>
+        <p className="text-[11px] text-muted-foreground">
+          Now {formatGHS(price)}
+          {variant.compare_at_price ? (
+            <span className="ml-1 text-destructive">
+              (sale · was <s>{formatGHS(variant.compare_at_price)}</s>)
+            </span>
+          ) : null}
+        </p>
+        {options && <p className="text-[11px] text-muted-foreground">{options}</p>}
       </td>
       <td>
         <input
@@ -871,8 +1316,256 @@ function VariantRow({
           >
             {active ? 'Active' : 'Hidden'}
           </button>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={onDetails}
+            title="SKU, options, weight and sale price"
+            aria-label={`Details for ${sku}`}
+          >
+            <Pencil className="size-3.5" aria-hidden />
+          </button>
         </div>
       </td>
     </tr>
+  );
+}
+
+function ProductDetailsForm({
+  product,
+  categories,
+  brands,
+  onSave,
+}: {
+  product: ProductRow;
+  categories: Category[];
+  brands: Brand[];
+  onSave: (d: ProductDetails) => void;
+}) {
+  const [title, setTitle] = useState(product.title);
+  const [description, setDescription] = useState(product.description ?? '');
+  const [model, setModel] = useState(product.model ?? '');
+  const [categoryId, setCategoryId] = useState(product.category_id ?? '');
+  const [brandId, setBrandId] = useState(product.brand_id ?? '');
+  const [months, setMonths] = useState(String(product.warranty_months));
+  const [provider, setProvider] = useState(product.warranty_provider ?? '');
+  const monthsN = Number(months);
+  const valid = title.trim() && categoryId && brandId && Number.isInteger(monthsN) && monthsN >= 0;
+
+  return (
+    <form
+      className="space-y-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!valid) return;
+        onSave({
+          title,
+          description,
+          model,
+          category_id: categoryId,
+          brand_id: brandId,
+          warranty_months: monthsN,
+          warranty_provider: provider,
+        });
+      }}
+    >
+      <Field
+        label="Title"
+        hint={`Web address stays /p/${product.slug} so existing links keep working.`}
+      >
+        <input
+          className="input"
+          value={title}
+          maxLength={200}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </Field>
+      <Field label="Description" hint="Shown on the product page and used by search.">
+        <textarea
+          className="input min-h-28 py-2"
+          value={description}
+          maxLength={5000}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Category">
+          <select
+            className="input"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+          >
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Brand">
+          <select className="input" value={brandId} onChange={(e) => setBrandId(e.target.value)}>
+            {brands.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Model number">
+          <input className="input" value={model} onChange={(e) => setModel(e.target.value)} />
+        </Field>
+        <Field label="Warranty (months)" hint="0 = no warranty">
+          <input
+            className="input"
+            type="number"
+            min={0}
+            value={months}
+            onChange={(e) => setMonths(e.target.value)}
+          />
+        </Field>
+      </div>
+      <Field label="Warranty provided by" hint="e.g. Apple Ghana, ExtraMile">
+        <input className="input" value={provider} onChange={(e) => setProvider(e.target.value)} />
+      </Field>
+      {categoryId !== (product.category_id ?? '') && (
+        <Notice tone="info">
+          Changing the category changes which spec fields the product page shows; values already
+          entered are kept.
+        </Notice>
+      )}
+      <div className="flex justify-end">
+        <button type="submit" className="btn-primary" disabled={!valid}>
+          Save details
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function VariantDetailsForm({
+  variant,
+  onSave,
+}: {
+  variant: Variant;
+  onSave: (d: VariantDetails) => void;
+}) {
+  const [sku, setSku] = useState(variant.sku);
+  const [options, setOptions] = useState<[string, string][]>(() => {
+    const e = Object.entries(variant.attrs);
+    return e.length
+      ? e
+      : [
+          ['color', ''],
+          ['storage', ''],
+        ];
+  });
+  const [weight, setWeight] = useState(String(variant.weight_grams));
+  const [onSale, setOnSale] = useState(variant.compare_at_price !== null);
+  const [wasPrice, setWasPrice] = useState(pesewasToInput(variant.compare_at_price));
+  const wasP = onSale ? cedisInputToPesewas(wasPrice) : null;
+  const weightN = Number(weight);
+  const errors = [
+    !sku.trim() && 'Enter a SKU.',
+    !(Number.isInteger(weightN) && weightN > 0) && 'Weight: whole grams above 0.',
+    onSale &&
+      (wasP === null || wasP <= variant.price) &&
+      `The “was” price must be above the selling price (${formatGHS(variant.price)}).`,
+  ].filter(Boolean) as string[];
+
+  return (
+    <form
+      className="space-y-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (errors.length) return;
+        onSave({
+          sku,
+          attrs: Object.fromEntries(options.map(([k, v]) => [specKey(k), v])),
+          weight_grams: weightN,
+          compare_at_price: onSale ? wasP : null,
+        });
+      }}
+    >
+      <Field label="SKU">
+        <input className="input font-mono" value={sku} onChange={(e) => setSku(e.target.value)} />
+      </Field>
+      <div>
+        <p className="label mb-1">Options customers choose between</p>
+        <div className="space-y-1.5">
+          {options.map(([k, v], i) => (
+            <div key={i} className="flex gap-1.5">
+              <input
+                className="input w-36"
+                placeholder="Option, e.g. Colour"
+                value={k}
+                onChange={(e) =>
+                  setOptions(options.map((o, j) => (j === i ? [e.target.value, o[1]] : o)))
+                }
+              />
+              <input
+                className="input"
+                placeholder="Value, e.g. Blue"
+                value={v}
+                onChange={(e) =>
+                  setOptions(options.map((o, j) => (j === i ? [o[0], e.target.value] : o)))
+                }
+              />
+              <button
+                type="button"
+                className="btn-ghost w-8 px-0"
+                aria-label="Remove option"
+                onClick={() => setOptions(options.filter((_, j) => j !== i))}
+              >
+                <X className="size-3.5" aria-hidden />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => setOptions([...options, ['', '']])}
+          >
+            <Plus className="size-3.5" aria-hidden /> Add option
+          </button>
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">Empty rows are ignored.</p>
+      </div>
+      <Field label="Weight (grams)" hint="Used for packing and couriers.">
+        <input
+          className="input"
+          type="number"
+          min={1}
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+        />
+      </Field>
+      <div className="space-y-2 rounded-lg border p-3">
+        <label className="flex items-center gap-2 text-[13px] font-medium">
+          <input type="checkbox" checked={onSale} onChange={(e) => setOnSale(e.target.checked)} />
+          On sale — show a struck-through “was” price
+        </label>
+        {onSale && (
+          <Field
+            label="Was (GH₵)"
+            hint={`Customers pay ${formatGHS(variant.price)}; change that in the variant table.`}
+          >
+            <input
+              className="input"
+              type="number"
+              min={0.01}
+              step="0.01"
+              value={wasPrice}
+              onChange={(e) => setWasPrice(e.target.value)}
+            />
+          </Field>
+        )}
+      </div>
+      {errors.length > 0 && <Notice tone="error">{errors[0]}</Notice>}
+      <div className="flex justify-end">
+        <button type="submit" className="btn-primary" disabled={errors.length > 0}>
+          Save variant
+        </button>
+      </div>
+    </form>
   );
 }

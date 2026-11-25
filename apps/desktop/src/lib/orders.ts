@@ -18,14 +18,71 @@ export interface OrderItemRow {
   sku: string;
   title: string;
   qty: number;
+  unit_price: number; // pesewas
   serials: string[];
 }
 
+/** The delivery address captured at checkout (orders.ship_to — an immutable snapshot). */
+export interface ShipTo {
+  recipient?: string;
+  phone?: string;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  region?: string;
+  landmark?: string;
+}
+
+export interface RefundRow {
+  id: string;
+  amount: number; // pesewas
+  reason: string | null;
+  status: string;
+  created_at: string;
+}
+
 export interface OrderDetail extends OrderRow {
+  phone: string;
+  ship_to: ShipTo;
+  zone: { name: string; eta_days_min: number; eta_days_max: number } | null;
+  subtotal: number;
+  shipping_fee: number;
+  discount: number;
+  coupon_code: string | null;
+  notes: string | null;
   items: OrderItemRow[];
+  refunds: RefundRow[];
+  /** total minus everything refunded so far, in pesewas. */
+  refundable: number;
 }
 
 const SELECT = 'id, order_number, status, payment_status, total, email, created_at';
+const DETAIL_SELECT = `${SELECT}, phone, ship_to, subtotal, shipping_fee, discount, coupon_code, notes, shipping_zones(name, eta_days_min, eta_days_max)`;
+
+interface DetailJoin extends OrderRow {
+  phone: string;
+  ship_to: ShipTo | null;
+  subtotal: number;
+  shipping_fee: number;
+  discount: number;
+  coupon_code: string | null;
+  notes: string | null;
+  shipping_zones: { name: string; eta_days_min: number; eta_days_max: number } | null;
+}
+
+/** Find any order (not just open ones) by number, email or phone — e.g. to refund it. */
+export async function searchOrders(q: string): Promise<OrderRow[]> {
+  const term = q.trim().replace(/[%,()]/g, '');
+  if (!term) return [];
+  const { data } = await supabase
+    .from('orders')
+    .select(SELECT)
+    .or(`order_number.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`)
+    .order('created_at', { ascending: false })
+    .limit(25)
+    .returns<OrderRow[]>();
+  return data ?? [];
+}
 
 /** Open orders staff act on (RLS lets staff read all). Cached for offline in D3. */
 export async function listOpenOrders(): Promise<OrderRow[]> {
@@ -41,18 +98,65 @@ export async function listOpenOrders(): Promise<OrderRow[]> {
 export async function getOrderDetail(id: string): Promise<OrderDetail | null> {
   const { data } = await supabase
     .from('orders')
-    .select(SELECT)
+    .select(DETAIL_SELECT)
     .eq('id', id)
     .limit(1)
-    .returns<OrderRow[]>();
+    .returns<DetailJoin[]>();
   const order = data?.[0];
   if (!order) return null;
-  const { data: items } = await supabase
-    .from('order_items')
-    .select('id, sku, title, qty, serials')
-    .eq('order_id', id)
-    .returns<OrderItemRow[]>();
-  return { ...order, items: items ?? [] };
+  const [{ data: items }, { data: refunds }] = await Promise.all([
+    supabase
+      .from('order_items')
+      .select('id, sku, title, qty, unit_price, serials')
+      .eq('order_id', id)
+      .returns<OrderItemRow[]>(),
+    supabase
+      .from('refunds')
+      .select('id, amount, reason, status, created_at')
+      .eq('order_id', id)
+      .order('created_at', { ascending: true })
+      .returns<RefundRow[]>(),
+  ]);
+  const { shipping_zones: zone, ship_to, ...rest } = order;
+  const refunded = (refunds ?? []).reduce((n, r) => n + r.amount, 0);
+  return {
+    ...rest,
+    ship_to: ship_to ?? {},
+    zone,
+    items: items ?? [],
+    refunds: refunds ?? [],
+    refundable: Math.max(order.total - refunded, 0),
+  };
+}
+
+/**
+ * Refund through admin-actions (admin only; the server checks the role, the amount
+ * against what is left, calls Paystack and restocks a full refund unless `restock` is
+ * false). `amountPesewas` null = everything still refundable. Online only — money must
+ * never move from a queued replay the admin can no longer see.
+ */
+export async function refundOrder(
+  orderId: string,
+  amountPesewas: number | null,
+  reason: string,
+  restock: boolean,
+): Promise<{ refundAmount: number; full: boolean }> {
+  return invokeAdminAction<{ refundAmount: number; full: boolean }>('refund', {
+    order_id: orderId,
+    amount: amountPesewas,
+    reason,
+    restock,
+  });
+}
+
+/** One line of the delivery address, skipping empty parts. */
+export function formatAddress(s: ShipTo): string[] {
+  return [
+    s.recipient,
+    [s.line1, s.line2].filter(Boolean).join(', '),
+    s.landmark ? `Near ${s.landmark}` : '',
+    [s.city, s.region].filter(Boolean).join(', '),
+  ].filter((l): l is string => Boolean(l && l.trim()));
 }
 
 function key(): string {
