@@ -1,15 +1,19 @@
 import {
   cedisToPesewas,
   PRODUCT_CONDITIONS,
+  type Database,
   type Json,
   type ProductCondition,
   type SpecValue,
 } from '@extramile/core';
+import { refreshStorefront } from './storefront';
 import { supabase } from './supabase';
 
 // Catalogue CRUD — the desktop is where full catalogue management lives
 // (web admin is read-only, docs/07 §2). All writes go straight to the tables and
 // are authorised by RLS `is_staff()`; no Edge Function is needed for these.
+// Every successful write calls refreshStorefront() so the shop's cached pages update
+// straight away instead of up to 5 minutes later.
 
 export type Condition = ProductCondition;
 export const CONDITIONS: Condition[] = PRODUCT_CONDITIONS;
@@ -90,11 +94,13 @@ export async function listBrands(): Promise<Brand[]> {
 export async function createCategory(name: string): Promise<void> {
   const { error } = await supabase.from('categories').insert({ name, slug: slugify(name) });
   if (error) throw new Error(error.message);
+  refreshStorefront();
 }
 
 export async function createBrand(name: string): Promise<void> {
   const { error } = await supabase.from('brands').insert({ name, slug: slugify(name) });
   if (error) throw new Error(error.message);
+  refreshStorefront();
 }
 
 interface ProductJoin {
@@ -155,12 +161,38 @@ export async function uploadProductImage(productId: string, file: File): Promise
     await supabase.storage.from(IMAGE_BUCKET).remove([path]);
     throw new Error(error.message);
   }
+  refreshStorefront();
 }
 
 export async function deleteProductImage(id: string, storagePath: string): Promise<void> {
-  const { error } = await supabase.from('product_images').delete().eq('id', id);
+  const { data, error } = await supabase.from('product_images').delete().eq('id', id).select('id');
   if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error(NOT_SAVED);
   await supabase.storage.from(IMAGE_BUCKET).remove([storagePath]);
+  refreshStorefront();
+}
+
+/**
+ * RLS turns a forbidden or missing-row UPDATE/DELETE into "0 rows, no error". Without
+ * this check the screen would say "saved" while nothing changed in the database.
+ */
+const NOT_SAVED = 'Not saved — the item was not found or your account cannot change it.';
+
+type ProductPatch = Database['public']['Tables']['products']['Update'];
+type VariantPatch = Database['public']['Tables']['product_variants']['Update'];
+
+async function updateProduct(id: string, row: ProductPatch): Promise<void> {
+  saved(await supabase.from('products').update(row).eq('id', id).select('id'));
+}
+
+async function updateVariantRow(id: string, row: VariantPatch): Promise<void> {
+  saved(await supabase.from('product_variants').update(row).eq('id', id).select('id'));
+}
+
+function saved(res: { data: unknown[] | null; error: { message: string } | null }): void {
+  if (res.error) throw new Error(res.error.message);
+  if (!res.data?.length) throw new Error(NOT_SAVED);
+  refreshStorefront();
 }
 
 export interface NewProduct {
@@ -194,6 +226,7 @@ export async function createProduct(p: NewProduct): Promise<string> {
   if (error) throw new Error(error.message);
   const id = data?.[0]?.id;
   if (!id) throw new Error('Product was not created.');
+  refreshStorefront();
   return id;
 }
 
@@ -210,6 +243,7 @@ export async function createVariant(
     stock,
   });
   if (error) throw new Error(error.message);
+  refreshStorefront();
 }
 
 export async function updateVariant(
@@ -220,25 +254,18 @@ export async function updateVariant(
   if (patch.priceCedis !== undefined) row.price = cedisToPesewas(patch.priceCedis);
   if (patch.stock !== undefined) row.stock = patch.stock;
   if (patch.is_active !== undefined) row.is_active = patch.is_active;
-  const { error } = await supabase.from('product_variants').update(row).eq('id', id);
-  if (error) throw new Error(error.message);
+  await updateVariantRow(id, row);
 }
 
 export async function setProductActive(id: string, isActive: boolean): Promise<void> {
-  const { error } = await supabase.from('products').update({ is_active: isActive }).eq('id', id);
-  if (error) throw new Error(error.message);
+  await updateProduct(id, { is_active: isActive });
 }
 
 export async function setProductCondition(id: string, condition: Condition): Promise<void> {
-  const { error } = await supabase.from('products').update({ condition }).eq('id', id);
-  if (error) throw new Error(error.message);
+  await updateProduct(id, { condition });
 }
 
 /** Replace a product's tech specs (empty values are dropped by the caller). */
 export async function updateProductSpecs(id: string, specs: Specs): Promise<void> {
-  const { error } = await supabase
-    .from('products')
-    .update({ specs: specs as Json })
-    .eq('id', id);
-  if (error) throw new Error(error.message);
+  await updateProduct(id, { specs: specs as Json });
 }

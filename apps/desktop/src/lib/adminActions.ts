@@ -1,3 +1,4 @@
+import { refreshStorefront } from './storefront';
 import { supabase } from './supabase';
 import { deviceId } from './tauri';
 
@@ -24,9 +25,13 @@ export async function invokeAdminAction<T = Record<string, unknown>>(
     },
   });
   if (error) throw new Error(await serverMessage(error));
+  // Stock is shown on the shop ("Only 2 left", "Out of stock"), so refresh its cache.
+  if (STOCK_ACTIONS.has(action)) refreshStorefront();
   const body = data as { ok?: boolean; replay?: boolean; result?: T } | null;
   return (body?.result ?? ({} as T)) as T;
 }
+
+const STOCK_ACTIONS = new Set(['stock_adjust_large', 'refund']);
 
 /** supabase-js only says "non-2xx status code"; the function's JSON says why. */
 async function serverMessage(error: { message: string; context?: unknown }): Promise<string> {

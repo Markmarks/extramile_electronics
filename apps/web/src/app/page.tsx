@@ -15,7 +15,7 @@ import {
 import Link from 'next/link';
 import { ProductGrid } from '@/components/catalog/product-grid';
 import { demoCatalogEnabled, demoCategories, demoProducts } from '@/lib/catalog/demo';
-import { getCategoryTree, listProducts } from '@/lib/catalog/queries';
+import { getCategoryTree, listProducts, type ProductListItem } from '@/lib/catalog/queries';
 
 export const revalidate = 300;
 
@@ -34,9 +34,24 @@ const promises = [
   { icon: Truck, title: 'Accra delivery', body: 'Next day in most areas' },
 ];
 
+/** Most products the home page lists under "All products" (ALL_PAGE_SIZE × pages). */
+const ALL_PAGE_SIZE = 48;
+const ALL_MAX_PAGES = 5;
+
+/** Every active product, newest first, paging through search_products (48 per call). */
+async function listAllProducts(): Promise<ProductListItem[]> {
+  const items: ProductListItem[] = [];
+  for (let page = 1; page <= ALL_MAX_PAGES; page++) {
+    const res = await listProducts({ sort: 'newest', page, pageSize: ALL_PAGE_SIZE });
+    items.push(...res.items);
+    if (!res.hasMore) break;
+  }
+  return items;
+}
+
 export default async function HomePage() {
   // Degrade gracefully if the DB is unreachable at build/render time.
-  const [dbCategories, featured] = await Promise.all([
+  const [dbCategories, featured, dbAll] = await Promise.all([
     getCategoryTree().catch(() => []),
     listProducts({ sort: 'rating', pageSize: 8 }).catch(() => ({
       items: [],
@@ -44,11 +59,13 @@ export default async function HomePage() {
       pageSize: 8,
       hasMore: false,
     })),
+    listAllProducts().catch(() => []),
   ]);
 
   const categories = dbCategories.length || !demoCatalogEnabled ? dbCategories : demoCategories;
   const products =
     featured.items.length || !demoCatalogEnabled ? featured.items : demoProducts.slice(0, 8);
+  const allProducts = dbAll.length || !demoCatalogEnabled ? dbAll : demoProducts;
 
   return (
     <main className="container space-y-12 pb-20 pt-6 sm:space-y-16 sm:pt-10">
@@ -134,6 +151,27 @@ export default async function HomePage() {
             </Link>
           </div>
           <ProductGrid items={products} />
+        </section>
+      )}
+
+      {/* Every listed product, newest first */}
+      {allProducts.length > 0 && (
+        <section className="space-y-4" aria-labelledby="all-products">
+          <div className="flex items-end justify-between">
+            <h2 id="all-products" className="text-xl font-semibold">
+              All products{' '}
+              <span className="text-[15px] font-normal text-muted-foreground">
+                ({allProducts.length})
+              </span>
+            </h2>
+            <Link
+              href="/search?sort=newest"
+              className="inline-flex items-center text-[15px] font-medium text-primary"
+            >
+              Filter &amp; sort <ChevronRight className="size-4" aria-hidden />
+            </Link>
+          </div>
+          <ProductGrid items={allProducts} />
         </section>
       )}
     </main>
