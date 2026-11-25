@@ -15,7 +15,9 @@ export function Price({
   const onSale = compareAt != null && compareAt > amount;
   return (
     <span className={`flex flex-wrap items-baseline gap-2 ${className ?? ''}`}>
-      <span className="font-semibold">{formatGHS(amount)}</span>
+      <span className="font-display font-bold tabular-nums tracking-tight">
+        {formatGHS(amount)}
+      </span>
       {onSale && (
         <span className="text-sm text-muted-foreground line-through">{formatGHS(compareAt)}</span>
       )}

@@ -350,7 +350,7 @@ export function CheckoutForm({
           )}
           <div className="flex justify-between border-t border-foreground/[0.06] pt-3 text-[17px] font-bold">
             <dt>Total</dt>
-            <dd>{formatGHS(quote.total)}</dd>
+            <dd className="font-display tabular-nums tracking-tight">{formatGHS(quote.total)}</dd>
           </div>
           {selectedZone && (
             <p className="text-[13px] text-muted-foreground">
@@ -370,7 +370,7 @@ export function CheckoutForm({
 
         <button
           type="button"
-          className="btn-primary w-full"
+          className="btn-pay w-full"
           onClick={placeOrder}
           disabled={placing || refreshing}
         >

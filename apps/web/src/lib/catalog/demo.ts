@@ -300,6 +300,7 @@ function toListItem(p: DemoProduct): ProductListItem {
     imageUrl: `/demo/${p.image}.svg`,
     imageAlt: p.title,
     inStock: p.variants.some((v) => v[4] > 0),
+    warrantyMonths: p.warranty[0],
   };
 }
 

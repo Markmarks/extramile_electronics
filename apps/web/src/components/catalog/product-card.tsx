@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { ProductListItem } from '@/lib/catalog/queries';
 import { tintFor } from '@/lib/catalog/tint';
 import { Price } from './price';
+import { WarrantyBadge } from './trust-badge';
 
 export function ProductCard({ product }: { product: ProductListItem }) {
   const onSale = product.compareAtPrice != null && product.compareAtPrice > (product.minPrice ?? 0);
@@ -56,6 +57,7 @@ export function ProductCard({ product }: { product: ProductListItem }) {
         </p>
         <h3 className="line-clamp-1 text-[15px] font-semibold">{product.title}</h3>
         <Price amount={product.minPrice} compareAt={product.compareAtPrice} className="text-sm" />
+        <WarrantyBadge months={product.warrantyMonths} className="mt-1.5" />
       </div>
     </Link>
   );

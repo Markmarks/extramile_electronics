@@ -42,7 +42,8 @@
   /* Shared selector rather than chained @apply — Tailwind can't nest variant-bearing classes. */
   .btn,
   .btn-primary,
-  .btn-tinted {
+  .btn-tinted,
+  .btn-pay {
     @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg px-5 text-[15px] font-semibold transition duration-200 ease-out active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-primary {
@@ -50,6 +51,11 @@
   }
   .btn-tinted {
     @apply bg-primary/10 text-primary hover:bg-primary/15;
+  }
+  /* Paying (MoMo, card, bank via Paystack): Platinum with Ink text — one per screen at most.
+     Platinum is close to white, so by day it gets a 1px edge (#B9C1CE); at night it needs none. */
+  .btn-pay {
+    @apply bg-platinum text-[#0A1120] shadow-[inset_0_0_0_1px_#B9C1CE] hover:brightness-95 dark:shadow-none;
   }
   .btn-sm {
     @apply h-9 px-4 text-sm;

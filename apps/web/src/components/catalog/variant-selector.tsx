@@ -9,6 +9,7 @@ import { addToCartAction } from '@/lib/cart/actions';
 import { isDemoId } from '@/lib/catalog/demo';
 import type { ProductDetail, VariantDetail } from '@/lib/catalog/queries';
 import { tintFor } from '@/lib/catalog/tint';
+import { WarrantyBadge } from './trust-badge';
 
 function variantLabel(v: VariantDetail): string {
   const vals = Object.values(v.attrs)
@@ -150,6 +151,7 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
             >
               {CONDITION_LABELS[product.condition]}
             </span>
+            <WarrantyBadge months={product.warrantyMonths} className="text-[13px]" />
             <span className="text-muted-foreground">{CONDITION_NOTES[product.condition]}</span>
           </p>
           {product.ratingCount > 0 && (
@@ -162,7 +164,9 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
         </div>
 
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="text-3xl font-semibold tracking-tight">{formatGHS(chosen.price)}</span>
+          <span className="font-display text-3xl font-bold tabular-nums tracking-tight">
+            {formatGHS(chosen.price)}
+          </span>
           {onSale && chosen.compareAtPrice != null && (
             <>
               <span className="text-muted-foreground line-through">
@@ -259,7 +263,7 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
         )}
 
         {/* Assurances — grouped list */}
-        <ul className="overflow-hidden rounded-2xl bg-card text-[15px]">
+        <ul className="overflow-hidden rounded-2xl border bg-card text-[15px]">
           {[
             {
               icon: ShieldCheck,
@@ -290,7 +294,7 @@ export function VariantSelector({ product }: { product: ProductDetail }) {
           ))}
         </ul>
 
-        <p className="text-xs text-muted-foreground">SKU {chosen.sku}</p>
+        <p className="font-mono text-xs text-muted-foreground">SKU {chosen.sku}</p>
       </div>
     </div>
   );
