@@ -24,7 +24,7 @@ export function SpecTable({
         <div key={k} className="flex items-center justify-between gap-4 pl-4">
           <div
             className={`flex flex-1 items-center justify-between gap-4 py-3 pr-4 ${
-              i > 0 ? 'border-t border-black/[0.06]' : ''
+              i > 0 ? 'border-t border-foreground/[0.06]' : ''
             }`}
           >
             <dt className="text-muted-foreground">{specLabel(k)}</dt>

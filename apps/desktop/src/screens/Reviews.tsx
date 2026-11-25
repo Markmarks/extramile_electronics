@@ -82,7 +82,7 @@ export function Reviews() {
                     {[1, 2, 3, 4, 5].map((n) => (
                       <Star
                         key={n}
-                        className={`size-3.5 ${n <= r.rating ? 'fill-[#FF9500] text-[#FF9500]' : 'text-border'}`}
+                        className={`size-3.5 ${n <= r.rating ? 'fill-warning text-warning' : 'text-border'}`}
                         aria-hidden
                       />
                     ))}

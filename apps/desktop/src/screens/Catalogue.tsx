@@ -203,7 +203,7 @@ export function Catalogue() {
                         <span className="flex items-center gap-1.5">
                           <span className="truncate font-medium">{p.title}</span>
                           {p.condition !== 'new' && (
-                            <span className="badge shrink-0 bg-amber-500/15 text-amber-700">
+                            <span className="badge shrink-0 bg-warning/15 text-warning">
                               {CONDITION_LABELS[p.condition]}
                             </span>
                           )}
@@ -955,7 +955,7 @@ function ProductEditor({
               {product.description}
             </p>
           ) : (
-            <p className="mt-1.5 text-[13px] text-amber-700">No description yet.</p>
+            <p className="mt-1.5 text-[13px] text-warning">No description yet.</p>
           )}
         </div>
         <button type="button" className="btn-secondary" onClick={() => setEditingDetails(true)}>
@@ -1050,7 +1050,7 @@ function ProductEditor({
                 </button>
                 <button
                   type="button"
-                  className={`h-6 truncate px-1 text-[11px] ${img.alt ? 'text-muted-foreground' : 'text-amber-700'}`}
+                  className={`h-6 truncate px-1 text-[11px] ${img.alt ? 'text-muted-foreground' : 'text-warning'}`}
                   title={img.alt ?? 'Add a description for screen readers and search'}
                   onClick={() => setEditingAlt({ id: img.id, alt: img.alt ?? '' })}
                 >

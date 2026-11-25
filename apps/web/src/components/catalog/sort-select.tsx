@@ -29,7 +29,7 @@ export function SortSelect({ value }: { value: string }) {
       <select
         value={value}
         onChange={onChange}
-        className="h-9 appearance-none rounded-lg bg-card pl-4 pr-9 text-[13px] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="h-9 appearance-none rounded-lg bg-card pl-4 pr-9 text-[13px] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-foreground/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {OPTIONS.map(([v, label]) => (
           <option key={v} value={v}>

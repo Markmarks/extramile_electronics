@@ -8,7 +8,7 @@ const navItem =
 /** Static header — no cookies here, so pages keep their static/ISR rendering. */
 export function SiteHeader() {
   return (
-    <header className="glass sticky top-0 z-40 border-b border-black/5">
+    <header className="sticky top-0 z-40 border-b bg-background">
       <div className="container flex h-14 items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2 text-[17px] font-semibold tracking-tight">
           <span className="flex size-7 items-center justify-center rounded-md bg-foreground text-[13px] font-bold text-background">

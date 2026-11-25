@@ -2,11 +2,18 @@ import '@extramile/ui/tokens.css';
 import './globals.css';
 
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Bricolage_Grotesque, Inter, JetBrains_Mono } from 'next/font/google';
 import { SiteHeader } from '@/components/site-header';
 
-// Apple devices render SF via -apple-system; Inter is the closest match elsewhere.
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
+// Brand type: Bricolage Grotesque for headlines and prices, Inter for reading, JetBrains Mono for
+// IMEIs, SKUs and order numbers. Self-hosted by next/font, so every device gets the same faces.
+const sans = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
+const display = Bricolage_Grotesque({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+});
+const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
 export const metadata: Metadata = {
   title: {
@@ -20,14 +27,18 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f5f5f7' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
+    { media: '(prefers-color-scheme: dark)', color: '#0B0B0C' },
   ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${sans.variable} ${display.variable} ${mono.variable}`}
+      suppressHydrationWarning
+    >
       <body className="flex min-h-dvh flex-col">
         <SiteHeader />
         <div className="flex-1">{children}</div>

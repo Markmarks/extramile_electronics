@@ -87,7 +87,7 @@ export function CartLineItem({ line }: { line: CartLine }) {
 
         <p className="mt-0.5 text-[13px] text-muted-foreground">{formatGHS(line.unitPrice)} each</p>
         {line.stale && (
-          <p className="text-[13px] text-[#C26A00]">Price updated since you added this.</p>
+          <p className="text-[13px] text-warning">Price updated since you added this.</p>
         )}
         {!line.isActive && <p className="text-[13px] text-destructive">No longer available.</p>}
 

@@ -1,53 +1,64 @@
 /**
- * Shared design tokens (shadcn-compatible HSL CSS variables).
- * Imported by apps/web and apps/desktop; each app owns its own @tailwind directives.
- * Brand: a deep electronics-blue primary with a warm amber accent.
+ * ExtraMile brand tokens (shadcn-compatible HSL channels). Source of truth for both apps.
+ * Palette H — Sapphire & Platinum. Day = White, Night = Onyx (follows the device's dark mode).
+ * See docs/brand/extramile-brand-book.html. Each app owns its own @tailwind directives.
  */
 :root {
+  /* Day: White */
   --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
+  --foreground: 221 52% 8%; /* Ink Navy #0A1120 */
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  --card-foreground: 221 52% 8%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --primary: 221 83% 45%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222 47% 11%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  --accent: 38 92% 50%;
-  --accent-foreground: 222 47% 11%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 210 40% 98%;
-  --success: 142 71% 45%;
-  --success-foreground: 210 40% 98%;
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 221 83% 45%;
-  --radius: 0.5rem;
+  --popover-foreground: 221 52% 8%;
+  --primary: 218 54% 26%; /* Sapphire #1F3A68 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 216 29% 97%;
+  --secondary-foreground: 221 52% 8%;
+  --muted: 216 29% 97%;
+  --muted-foreground: 211 11% 40%; /* Slate #5B6672 */
+  --accent: 216 23% 91%; /* hover fill */
+  --accent-foreground: 221 52% 8%;
+  --destructive: 4 63% 48%; /* Signal Red #C8372D */
+  --destructive-foreground: 0 0% 100%;
+  --success: 145 64% 29%; /* #1B7A43 — order/payment states only */
+  --success-foreground: 0 0% 100%;
+  --warning: 31 100% 32%; /* #A35400 — pending, price changed, low stock */
+  --warning-foreground: 0 0% 100%;
+  --brand-platinum: 217 18% 86%; /* #D5DAE2 — MoMo + warranty only, never text */
+  --brand-stroke: 222 64% 55%; /* #4470D6 — logo stroke, focus */
+  --border: 216 23% 91%;
+  --input: 216 23% 91%;
+  --ring: 222 64% 55%;
+  --radius: 0.625rem;
+  color-scheme: light;
 }
 
-.dark {
-  --background: 222 47% 8%;
-  --foreground: 210 40% 98%;
-  --card: 222 47% 10%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222 47% 10%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 217 91% 60%;
-  --primary-foreground: 222 47% 11%;
-  --secondary: 217 33% 17%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217 33% 17%;
-  --muted-foreground: 215 20% 65%;
-  --accent: 38 92% 50%;
-  --accent-foreground: 222 47% 11%;
-  --destructive: 0 63% 45%;
-  --destructive-foreground: 210 40% 98%;
-  --success: 142 71% 45%;
-  --success-foreground: 210 40% 98%;
-  --border: 217 33% 20%;
-  --input: 217 33% 20%;
-  --ring: 217 91% 60%;
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Night: Onyx */
+    --background: 240 4% 5%; /* #0B0B0C */
+    --foreground: 40 19% 94%; /* #F2F0EC */
+    --card: 240 5% 9%; /* #151517 */
+    --card-foreground: 40 19% 94%;
+    --popover: 240 5% 9%;
+    --popover-foreground: 40 19% 94%;
+    --primary: 220 65% 81%; /* Ice Blue #AFC4EE */
+    --primary-foreground: 240 4% 5%;
+    --secondary: 240 5% 12%;
+    --secondary-foreground: 40 19% 94%;
+    --muted: 240 5% 12%;
+    --muted-foreground: 42 5% 63%; /* Stone #A6A39C */
+    --accent: 240 5% 12%;
+    --accent-foreground: 40 19% 94%;
+    --destructive: 5 100% 72%; /* #FF7A6E */
+    --destructive-foreground: 240 4% 5%;
+    --success: 145 52% 58%; /* #5CCB8A */
+    --success-foreground: 240 4% 5%;
+    --warning: 37 91% 55%; /* #F5A524 */
+    --warning-foreground: 240 4% 5%;
+    --border: 240 3% 17%; /* #2A2A2D */
+    --input: 240 3% 17%;
+    color-scheme: dark;
+  }
 }

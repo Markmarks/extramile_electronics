@@ -30,7 +30,7 @@ export default async function OrdersPage() {
             <li key={o.orderNumber}>
               <Link
                 href={`/account/orders/${o.orderNumber}`}
-                className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-black/[0.03]"
+                className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-foreground/[0.03]"
               >
                 <div className="min-w-0 flex-1 space-y-1">
                   <p className="text-[17px] font-semibold">{o.orderNumber}</p>

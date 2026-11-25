@@ -14,12 +14,12 @@ export interface Email {
 }
 
 function layout(heading: string, bodyHtml: string): string {
-  return `<div style="font-family:system-ui,Segoe UI,Arial,sans-serif;max-width:560px;margin:0 auto;color:#0b1120">
-    <h1 style="font-size:20px;color:#1e40af">ExtraMile Electronics</h1>
+  return `<div style="font-family:system-ui,Segoe UI,Arial,sans-serif;max-width:560px;margin:0 auto;color:#0A1120">
+    <h1 style="font-size:20px;color:#1F3A68">ExtraMile Electronics</h1>
     <h2 style="font-size:16px">${heading}</h2>
     ${bodyHtml}
-    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
-    <p style="font-size:12px;color:#64748b">ExtraMile Electronics · Accra, Ghana</p>
+    <hr style="border:none;border-top:1px solid #E4E8EE;margin:24px 0" />
+    <p style="font-size:12px;color:#5B6672">ExtraMile Electronics · Accra, Ghana</p>
   </div>`;
 }
 
@@ -31,8 +31,8 @@ function itemsTable(data: OrderEmailData): string {
     )
     .join('');
   return `<table style="width:100%;border-collapse:collapse;font-size:14px">${rows}
-    <tr><td style="padding-top:8px;font-weight:600;border-top:1px solid #e2e8f0">Total</td>
-    <td style="padding-top:8px;font-weight:600;border-top:1px solid #e2e8f0;text-align:right">${formatGHS(data.total)}</td></tr>
+    <tr><td style="padding-top:8px;font-weight:600;border-top:1px solid #E4E8EE">Total</td>
+    <td style="padding-top:8px;font-weight:600;border-top:1px solid #E4E8EE;text-align:right">${formatGHS(data.total)}</td></tr>
   </table>`;
 }
 

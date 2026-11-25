@@ -10,7 +10,8 @@ const glob = (p: string) => path.resolve(here, p).replace(/\\/g, '/');
 
 // Same token mapping as apps/web so both surfaces read as one product.
 const config: Config = {
-  darkMode: 'class',
+  // Night (Onyx) follows the device setting; tokens switch in packages/ui tokens.css.
+  darkMode: 'media',
   content: [
     glob('index.html'),
     glob('src/**/*.{ts,tsx}'),
@@ -40,6 +41,12 @@ const config: Config = {
           DEFAULT: 'hsl(var(--success))',
           foreground: 'hsl(var(--success-foreground))',
         },
+        warning: {
+          DEFAULT: 'hsl(var(--warning))',
+          foreground: 'hsl(var(--warning-foreground))',
+        },
+        platinum: 'hsl(var(--brand-platinum))',
+        stroke: 'hsl(var(--brand-stroke))',
         muted: {
           DEFAULT: 'hsl(var(--muted))',
           foreground: 'hsl(var(--muted-foreground))',
@@ -52,6 +59,11 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+      },
+      fontFamily: {
+        sans: ['var(--font-sans)', 'Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-sans)', 'Segoe UI', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'Consolas', 'monospace'],
       },
       borderRadius: {
         lg: 'var(--radius)',

@@ -1,3 +1,6 @@
+import '@fontsource-variable/inter';
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource-variable/jetbrains-mono';
 import '@extramile/ui/tokens.css';
 import './index.css';
 

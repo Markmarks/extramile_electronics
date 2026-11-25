@@ -22,7 +22,7 @@ function Chip({
       className={`pressable inline-flex items-center rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
         active
           ? 'bg-foreground text-background'
-          : 'bg-secondary text-foreground/80 hover:bg-black/[0.08]'
+          : 'bg-secondary text-foreground/80 hover:bg-foreground/[0.08]'
       }`}
     >
       {children}

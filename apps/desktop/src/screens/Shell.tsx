@@ -104,7 +104,7 @@ export function Shell() {
               <p className="truncate text-xs font-medium">{email}</p>
               <p className="flex items-center gap-1.5 text-[11px] capitalize text-muted-foreground">
                 <span
-                  className={`size-1.5 rounded-full ${online ? 'bg-success' : 'bg-amber-500'}`}
+                  className={`size-1.5 rounded-full ${online ? 'bg-success' : 'bg-warning'}`}
                   aria-hidden
                 />
                 {role ?? 'unknown'} · {online ? 'online' : 'offline'}
@@ -130,7 +130,7 @@ export function Shell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <OfflineBanner online={online} lastSync={lastSync} />
         {isPreview && (
-          <p className="border-b bg-amber-500/10 px-6 py-1.5 text-xs text-amber-700">
+          <p className="border-b bg-warning/10 px-6 py-1.5 text-xs text-warning">
             Design preview — not signed in, so only public data loads.
           </p>
         )}

@@ -48,7 +48,7 @@ export default async function SearchPage({
     <main className="container pb-20 pt-6">
       <h1 className="mb-4 text-3xl font-semibold">Search</h1>
       <form action="/search" method="get" className="mb-4">
-        <label className="flex h-12 items-center gap-2 rounded-2xl bg-black/[0.06] px-4 text-muted-foreground transition-shadow focus-within:bg-card focus-within:ring-4 focus-within:ring-primary/20">
+        <label className="flex h-12 items-center gap-2 rounded-2xl bg-foreground/[0.06] px-4 text-muted-foreground transition-shadow focus-within:bg-card focus-within:ring-4 focus-within:ring-primary/20">
           <Search className="size-[18px] shrink-0" aria-hidden />
           <input
             type="search"

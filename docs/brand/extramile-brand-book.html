@@ -1,0 +1,897 @@
+<title>ExtraMile Brand Book</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one 1080px reading column; each chapter opens on a "mile line" ruler; specimens sit on quiet surfaces. */
+:root {
+  /* Palette H — Sapphire & Platinum. Day = White, Night = Onyx. */
+  --ink: #0A1120;          /* Ink Navy */
+  --sapphire: #1F3A68;     /* Sapphire */
+  --ice: #AFC4EE;          /* Ice Blue */
+  --platinum: #D5DAE2;     /* Platinum */
+  --stroke: #4470D6;       /* Stroke Blue: logo stroke + focus */
+  --red: #C8372D;
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --raised: #F4F6F9;
+  --fg: #0A1120;
+  --muted: #5B6672;
+  --line: #E4E8EE;
+  --accent: #1F3A68;       /* primary action on the current theme */
+  --accent-fg: #FFFFFF;
+  --hl: #1F3A68;           /* highlight / link text */
+  --tint: #E6ECF6;
+  --cover: #0A1120;
+  --cover-tile: #1C2A48;
+  --mark-tile: #0A1120;
+  --mark-fg: #FFFFFF;
+  --mark-bar: #4470D6;
+  --code-bg: #0A1120;
+  --code-fg: #E4E8EE;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-text: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0B0C; --surface: #151517; --raised: #1C1C1F; --fg: #F2F0EC; --muted: #A6A39C; --line: #2A2A2D;
+    --accent: #AFC4EE; --accent-fg: #0B0B0C; --hl: #AFC4EE; --tint: #1C2230; --red: #FF7A6E;
+    --cover: #0B0B0C; --cover-tile: #232326; --mark-tile: #232326; --code-bg: #050506; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0B0C; --surface: #151517; --raised: #1C1C1F; --fg: #F2F0EC; --muted: #A6A39C; --line: #2A2A2D;
+  --accent: #AFC4EE; --accent-fg: #0B0B0C; --hl: #AFC4EE; --tint: #1C2230; --red: #FF7A6E;
+  --cover: #0B0B0C; --cover-tile: #232326; --mark-tile: #232326; --code-bg: #050506; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--f-text); font-size: 16px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased; letter-spacing: -0.006em;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.03em; line-height: 1.05; }
+h2 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 750; }
+h3 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
+p { margin: 0; max-width: 65ch; }
+.lede { font-size: 1.15rem; color: var(--muted); }
+.eyebrow { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mono { font-family: var(--f-mono); }
+.tnum { font-variant-numeric: tabular-nums; }
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--stroke); outline-offset: 2px; }
+
+/* ---------- hero ---------- */
+.hero { background: var(--cover); color: #E8ECEF; margin-top: calc(-1 * env(safe-area-inset-top, 0px)); padding-top: calc(env(safe-area-inset-top, 0px) + 3.5rem); padding-bottom: 3.5rem; overflow: hidden; }
+.hero .wrap { display: grid; gap: 2.5rem; }
+.hero-top { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.hero .eyebrow { color: #9AA6B2; }
+.hero-logo { display: flex; align-items: center; gap: clamp(14px, 3vw, 28px); --mark-tile: var(--cover-tile); --mark-bar: #4470D6; --mark-fg: #FFFFFF; }
+.hero-logo svg { width: clamp(84px, 16vw, 168px); height: auto; flex: none; }
+.hero-logo .wm { font-family: var(--f-display); font-weight: 780; font-size: clamp(3rem, 11vw, 7.5rem); letter-spacing: -0.055em; line-height: 0.9; color: #FFFFFF; }
+.hero h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); font-weight: 600; max-width: 22ch; color: #E8ECEF; }
+.hero h1 em { font-style: normal; color: #AFC4EE; }
+.hero-meta { display: flex; gap: 2rem; flex-wrap: wrap; font-size: 0.9rem; color: #9AA6B2; }
+.hero-meta b { display: block; color: #FFFFFF; font-weight: 600; }
+
+/* ---------- mile line (signature device) ---------- */
+.mileline { height: 14px; background:
+  linear-gradient(var(--fg), var(--fg)) left bottom / 100% 1.5px no-repeat,
+  repeating-linear-gradient(90deg, var(--fg) 0 1.5px, transparent 1.5px 24px) left bottom / 100% 6px no-repeat,
+  repeating-linear-gradient(90deg, var(--fg) 0 1.5px, transparent 1.5px 120px) left bottom / 100% 14px no-repeat; opacity: .35; }
+.hero .mileline { --fg: #E8ECEF; }
+
+section.ch { padding-block: 4.5rem 1rem; }
+.ch-head { display: grid; gap: 1rem; margin-bottom: 2.5rem; }
+.ch-head .row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.ch-num { font-family: var(--f-mono); font-size: 0.8rem; color: var(--accent); font-weight: 600; }
+
+.grid { display: grid; gap: 1rem; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.g4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.grid > * { min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.5rem; display: grid; gap: .75rem; align-content: start; }
+.panel p { color: var(--muted); font-size: .95rem; }
+.label { font-size: .8rem; font-weight: 600; color: var(--muted); }
+
+/* ---------- audit ---------- */
+.audit { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 1rem; }
+.audit .col { display: grid; gap: .6rem; align-content: start; }
+.audit ul { margin: 0; padding-left: 1.1rem; color: var(--muted); display: grid; gap: .4rem; }
+.audit li b { color: var(--fg); font-weight: 600; }
+.tag { display: inline-flex; align-items: center; gap: .35rem; font-size: .75rem; font-weight: 600; padding: .2rem .55rem; border-radius: 6px; width: fit-content; }
+.tag.old { background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red); }
+.tag.new { background: var(--tint); color: var(--hl); }
+
+/* ---------- positioning ---------- */
+.promise { font-family: var(--f-display); font-weight: 750; font-size: clamp(2.2rem, 7vw, 4.6rem); letter-spacing: -0.045em; line-height: 1; }
+.promise span { color: var(--accent); }
+.pillar h3 { display: flex; align-items: center; gap: .6rem; }
+.pillar .k { font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
+.traits { display: flex; flex-wrap: wrap; gap: .5rem; }
+.trait { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: .35rem .9rem; font-size: .9rem; }
+.trait s { color: var(--muted); text-decoration-thickness: 1px; }
+
+/* ---------- voice ---------- */
+.vtable { display: grid; gap: .6rem; }
+.vrow { display: grid; grid-template-columns: 140px 1fr 1fr; gap: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.25rem; align-items: start; }
+.vrow > * { min-width: 0; }
+.vrow .ctx { font-size: .8rem; font-weight: 600; color: var(--muted); }
+.vrow .no { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--red) 60%, transparent); }
+.vrow .yes { font-weight: 500; }
+.vhead { display: grid; grid-template-columns: 140px 1fr 1fr; gap: 1rem; padding: 0 1.25rem; }
+@media (max-width: 680px) { .vrow, .vhead { grid-template-columns: 1fr; gap: .4rem; } .vhead { display: none; } .vrow .no::before { content: "Not: "; text-decoration: none; display: inline; } }
+
+/* ---------- logo ---------- */
+.stage { border-radius: 14px; border: 1px solid var(--line); background: var(--surface); padding: 2.5rem 1.5rem; display: grid; place-items: center; min-height: 220px; position: relative; overflow: hidden; }
+.stage.dark { background: #0B0B0C; border-color: #0B0B0C; --mark-tile: #232326; --mark-bar: #4470D6; --mark-fg: #FFF; color: #F2F0EC; }
+.stage.green { background: #1F3A68; border-color: #1F3A68; --mark-tile: #0A1120; --mark-bar: #AFC4EE; --mark-fg: #FFF; color: #FFF; }
+.stage.gold { background: #D5DAE2; border-color: #D5DAE2; --mark-tile: #0A1120; --mark-bar: #0A1120; --mark-fg: #D5DAE2; color: #0A1120; }
+.stage .cap { position: absolute; left: 1rem; bottom: .8rem; font-family: var(--f-mono); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; opacity: .65; }
+.lockup { display: flex; align-items: center; gap: 14px; }
+.lockup svg { width: 64px; height: auto; flex: none; }
+.lockup .wm { font-family: var(--f-display); font-weight: 780; font-size: 2.6rem; letter-spacing: -0.055em; line-height: 1; }
+.lockup .desc { display: block; font-family: var(--f-text); font-weight: 600; font-size: .62rem; letter-spacing: .32em; text-transform: uppercase; margin-top: .35rem; opacity: .7; }
+.stacked { display: grid; justify-items: center; gap: 10px; }
+.stacked svg { width: 88px; height: auto; }
+.stacked .wm { font-family: var(--f-display); font-weight: 780; font-size: 2rem; letter-spacing: -0.05em; }
+.anatomy { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: center; }
+@media (max-width: 760px) { .anatomy { grid-template-columns: 1fr; } }
+.anatomy ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .7rem; color: var(--muted); }
+.anatomy ol b { color: var(--fg); }
+.misuse { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: .75rem; }
+.misuse figure { margin: 0; display: grid; gap: .5rem; }
+.misuse .box { aspect-ratio: 4/3; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); display: grid; place-items: center; position: relative; overflow: hidden; }
+.misuse .box svg { width: 64px; height: auto; }
+.misuse .box::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top right, transparent calc(50% - 1px), var(--red) calc(50% - 1px), var(--red) calc(50% + 1px), transparent calc(50% + 1px)); opacity: .7; }
+.misuse figcaption { font-size: .82rem; color: var(--muted); }
+.sizes { display: flex; align-items: flex-end; gap: 1.5rem; flex-wrap: wrap; }
+.sizes div { display: grid; gap: .4rem; justify-items: center; font-family: var(--f-mono); font-size: .7rem; color: var(--muted); }
+
+/* ---------- colour ---------- */
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: .75rem; }
+.sw { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); display: grid; }
+.sw .chip { height: 128px; padding: .9rem; display: flex; align-items: flex-end; font-family: var(--f-display); font-weight: 700; font-size: 1.15rem; letter-spacing: -.02em; }
+.sw .info { padding: .8rem .9rem; display: grid; gap: .1rem; font-size: .82rem; }
+.sw .info .mono { color: var(--muted); font-size: .76rem; }
+.ratio { display: grid; grid-template-columns: repeat(10, 1fr); height: 56px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.ratio div { display: grid; place-items: center; font-family: var(--f-mono); font-size: .7rem; }
+.contrast { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.contrast th, .contrast td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--line); }
+.contrast th { font-size: .75rem; color: var(--muted); font-weight: 600; }
+.contrast .pv { display: inline-block; padding: .15rem .5rem; border-radius: 5px; font-weight: 600; }
+.ok { color: var(--hl); font-weight: 600; }
+.warn { color: var(--red); font-weight: 600; }
+.scroll { overflow-x: auto; }
+
+.daynight { border-radius: 14px; padding: 1.4rem; display: grid; gap: .6rem; align-content: start; }
+.dn-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; font-size: .72rem; }
+.dn-tag { font-family: var(--f-mono); font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: .2rem .5rem; border-radius: 5px; }
+.dn-title { font-family: var(--f-display); font-weight: 720; font-size: 1.5rem; letter-spacing: -.03em; }
+.ratio + .ratio { margin-top: .5rem; }
+
+/* ---------- type ---------- */
+.specimen { display: grid; gap: 1.25rem; }
+.spec-row { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 1.25rem; align-items: baseline; padding-bottom: 1.25rem; border-bottom: 1px solid var(--line); }
+@media (max-width: 680px) { .spec-row { grid-template-columns: 1fr; gap: .4rem; } }
+.spec-row .meta { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); line-height: 1.5; }
+.t-d1 { font-family: var(--f-display); font-weight: 780; font-size: clamp(2.6rem, 7vw, 4.5rem); letter-spacing: -.05em; line-height: 1; }
+.t-d2 { font-family: var(--f-display); font-weight: 720; font-size: clamp(1.9rem, 4.5vw, 2.75rem); letter-spacing: -.04em; line-height: 1.05; }
+.t-h { font-family: var(--f-display); font-weight: 680; font-size: 1.5rem; letter-spacing: -.025em; }
+.t-body { font-size: 1rem; }
+.t-small { font-size: .82rem; color: var(--muted); }
+.t-price { font-family: var(--f-display); font-weight: 750; font-size: 2.25rem; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+.t-price small { font-size: .5em; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-right: .2em; }
+.t-mono { font-family: var(--f-mono); font-size: .95rem; letter-spacing: .02em; }
+.faces { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.face .big { font-size: 4.5rem; line-height: 1; letter-spacing: -.04em; }
+
+/* ---------- device / components ---------- */
+.btns { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.b { font: 600 .95rem/1 var(--f-text); border-radius: 10px; height: 46px; padding: 0 1.25rem; display: inline-flex; align-items: center; gap: .5rem; border: 0; cursor: pointer; }
+.b-primary { background: var(--accent); color: var(--accent-fg); }
+.b-primary:hover { background: color-mix(in srgb, var(--accent) 88%, var(--fg)); }
+.b-ink { background: var(--fg); color: var(--bg); }
+.b-ghost { background: transparent; color: var(--fg); box-shadow: inset 0 0 0 1.5px var(--line); }
+.b-momo { background: #D5DAE2; color: #0A1120; box-shadow: inset 0 0 0 1px #B9C1CE; }
+.badges { display: flex; flex-wrap: wrap; gap: .5rem; }
+.bd { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; font-weight: 600; border-radius: 6px; padding: .28rem .55rem; }
+.bd svg { width: 13px; height: 13px; }
+.bd-verified { background: var(--tint); color: var(--hl); }
+.bd-warranty { background: color-mix(in srgb, var(--platinum) 55%, transparent); color: var(--fg); }
+.bd-open { background: color-mix(in srgb, var(--muted) 16%, transparent); color: var(--fg); }
+.bd-low { background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--red); }
+
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: grid; max-width: 340px; width: 100%; }
+.pcard .img { aspect-ratio: 1; max-width: 100%; background: var(--bg); display: grid; place-items: center; position: relative; }
+.pcard .img .sticker { position: absolute; top: .75rem; left: .75rem; }
+.phone-art { width: 38%; aspect-ratio: 9/19; border-radius: 18px; background: linear-gradient(160deg, #2A3B5E, #0A1120); box-shadow: inset 0 0 0 3px #3A4A6C, 0 14px 30px -14px rgb(10 17 32 / .5); z-index: 1; position: relative; }
+.phone-art::after { content: ""; position: absolute; top: 8px; left: 50%; translate: -50% 0; width: 22%; height: 4px; border-radius: 4px; background: #3B4762; }
+.pcard .body { padding: 1rem 1.1rem 1.2rem; display: grid; gap: .5rem; }
+.pcard .brand { font-size: .75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.pcard .name { font-family: var(--f-display); font-weight: 680; font-size: 1.15rem; letter-spacing: -.02em; line-height: 1.2; }
+.pcard .specs { font-size: .82rem; color: var(--muted); }
+.pcard .pr { display: flex; align-items: baseline; gap: .5rem; font-variant-numeric: tabular-nums; }
+.pcard .pr b { font-family: var(--f-display); font-size: 1.4rem; font-weight: 750; letter-spacing: -.03em; }
+.pcard .pr s { color: var(--muted); font-size: .85rem; }
+
+.tracker { display: grid; gap: .8rem; }
+.track { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); padding-top: 22px; }
+.track::before { content: ""; position: absolute; top: 9px; left: 0; right: 0; height: 2px; background: var(--line); }
+.track::after { content: ""; position: absolute; top: 9px; left: 0; width: 62.5%; height: 2px; background: var(--accent); }
+.stop { position: relative; display: grid; gap: .15rem; font-size: .8rem; padding-right: .5rem; }
+.stop::before { content: ""; position: absolute; top: -18px; left: 0; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 2px var(--line); z-index: 1; }
+.stop.done::before { background: var(--accent); box-shadow: none; }
+.stop.now::before { background: var(--surface); box-shadow: inset 0 0 0 3px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+.stop b { font-weight: 600; }
+.stop span { color: var(--muted); font-size: .74rem; }
+@media (max-width: 520px) { .stop span { display: none; } .stop { font-size: .72rem; } }
+
+.fields { display: grid; gap: .9rem; max-width: 420px; }
+.fld label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: .35rem; }
+.fld .in { height: 46px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); display: flex; align-items: center; padding: 0 .9rem; font-size: .95rem; gap: .5rem; }
+.fld .in.focus { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+.fld .in .pre { color: var(--muted); font-family: var(--f-mono); font-size: .9rem; }
+.fld .hint { font-size: .78rem; color: var(--muted); margin-top: .3rem; }
+.fld .hint.err { color: var(--red); }
+
+/* ---------- applications ---------- */
+.mock-site { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+.ms-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 1.1rem; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.ms-bar .lockup svg { width: 40px; }
+.ms-bar .lockup .wm { font-size: 1.45rem; }
+.ms-bar nav { display: flex; gap: 1rem; font-size: .85rem; font-weight: 500; color: var(--muted); }
+.ms-hero { background: var(--bg); color: var(--fg); border-bottom: 1px solid var(--line); padding: clamp(1.5rem, 5vw, 3rem); display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 2rem; align-items: center; }
+@media (max-width: 700px) { .ms-hero { grid-template-columns: 1fr; } }
+.ms-hero h4 { font-family: var(--f-display); font-weight: 760; font-size: clamp(1.9rem, 5vw, 3.1rem); letter-spacing: -.045em; line-height: 1; margin: 0 0 1rem; text-wrap: balance; }
+.ms-hero h4 em { font-style: normal; color: var(--hl); }
+.ms-hero p { color: var(--muted); margin-bottom: 1.4rem; }
+.ms-hero .proof { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-top: 1.4rem; font-size: .8rem; color: var(--muted); }
+.ms-hero .proof b { color: var(--fg); font-weight: 600; display: block; font-size: .95rem; }
+.ms-hero .art { aspect-ratio: 1; max-width: 100%; border-radius: 20px; background: var(--tint); display: grid; place-items: center; position: relative; overflow: hidden; }
+.ms-hero .art .phone-art { width: 32%; }
+.ms-hero .art .road { position: absolute; left: -10%; right: -10%; bottom: 22%; height: 6px; background: var(--accent); border-radius: 3px; transform: rotate(-8deg); }
+
+.appicons { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-end; }
+.appicons div { display: grid; justify-items: center; gap: .5rem; font-size: .75rem; color: var(--muted); font-family: var(--f-mono); }
+.appicons svg { display: block; }
+
+.receipt { background: #FFFFFF; color: #0A1120; border-radius: 6px; padding: 1.4rem 1.3rem; font-family: var(--f-mono); font-size: .78rem; line-height: 1.55; max-width: 340px; width: 100%; box-shadow: 0 1px 0 #DDE3E1, 0 12px 30px -12px rgb(10 17 32 / .25); justify-self: center; --mark-tile: #0A1120; --mark-bar: #4470D6; --mark-fg: #FFF; }
+.receipt .r-head { display: flex; align-items: center; gap: .6rem; margin-bottom: .9rem; }
+.receipt .r-head svg { width: 34px; }
+.receipt .r-head b { font-family: var(--f-display); font-size: 1.25rem; letter-spacing: -.04em; font-weight: 780; }
+.receipt .rl { display: flex; justify-content: space-between; gap: .75rem; }
+.receipt .rl span:last-child { text-align: right; white-space: nowrap; }
+.receipt hr { border: 0; border-top: 1px dashed #9AA6B2; margin: .7rem 0; }
+.receipt .tot { font-weight: 600; font-size: .9rem; }
+.receipt .imei { color: #5B6672; font-size: .7rem; }
+.receipt .foot { margin-top: .9rem; color: #5B6672; font-size: .7rem; }
+
+.sticker-box { background: #C9A57A; border-radius: 14px; padding: 2rem 1rem; display: grid; place-items: center; min-height: 100%; background-image: repeating-linear-gradient(90deg, rgb(0 0 0 / .04) 0 2px, transparent 2px 9px); }
+.sticker { background: #0B0B0C; color: #F2F0EC; border-radius: 10px; width: min(100%, 300px); padding: 1rem 1.1rem; display: grid; gap: .7rem; --mark-tile: #232326; --mark-bar: #4470D6; --mark-fg: #FFF; }
+.sticker .top { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.sticker .top svg { width: 40px; }
+.sticker .seal { border: 1.5px dashed #D5DAE2; color: #D5DAE2; border-radius: 6px; padding: .5rem .6rem; font-size: .75rem; font-weight: 600; }
+.sticker .big { font-family: var(--f-display); font-weight: 760; font-size: 1.5rem; letter-spacing: -.04em; line-height: 1.05; }
+.sticker .zone { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: .72rem; color: #9AA6B2; }
+
+.social { aspect-ratio: 1; max-width: 100%; border-radius: 14px; background: #1F3A68; color: #FFF; padding: 1.5rem; display: grid; align-content: space-between; position: relative; overflow: hidden; --mark-tile: #0A1120; --mark-bar: #AFC4EE; --mark-fg: #FFF; }
+.social .s-big { font-family: var(--f-display); font-weight: 780; font-size: clamp(1.8rem, 5vw, 2.4rem); letter-spacing: -.045em; line-height: 1; }
+.social .s-price { font-family: var(--f-display); font-weight: 760; font-size: 1.6rem; letter-spacing: -.03em; color: #D5DAE2; }
+.social .s-foot { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; }
+.social .s-foot svg { width: 44px; }
+
+.sms { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 1.1rem; display: grid; gap: .6rem; max-width: 340px; width: 100%; justify-self: center; }
+.sms .from { font-size: .75rem; color: var(--muted); text-align: center; font-weight: 600; }
+.bubble { background: color-mix(in srgb, var(--muted) 14%, transparent); border-radius: 18px 18px 18px 4px; padding: .7rem .9rem; font-size: .88rem; line-height: 1.45; }
+
+/* ---------- tokens ---------- */
+pre.code { background: var(--code-bg); color: var(--code-fg); border-radius: 14px; padding: 1.25rem 1.4rem; font-family: var(--f-mono); font-size: .8rem; line-height: 1.6; overflow-x: auto; margin: 0; }
+pre.code .c { color: #7C8A99; }
+pre.code .v { color: #AFC4EE; }
+.code-wrap { position: relative; }
+.copy { position: absolute; top: .7rem; right: .7rem; font: 600 .75rem var(--f-text); background: #1B2740; color: #E8ECEF; border: 1px solid #2E3B57; border-radius: 7px; padding: .4rem .7rem; cursor: pointer; }
+
+.steps { display: grid; gap: .6rem; counter-reset: s; }
+.step { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) auto; gap: 1rem; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.2rem; }
+.step::before { counter-increment: s; content: counter(s, decimal-leading-zero); font-family: var(--f-mono); font-weight: 600; color: var(--accent); padding-top: .1rem; }
+.step h3 { font-size: 1.05rem; margin-bottom: .2rem; }
+.step p { color: var(--muted); font-size: .9rem; }
+.step .where { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); text-align: right; max-width: 220px; }
+@media (max-width: 640px) { .step { grid-template-columns: 2.2rem minmax(0, 1fr); } .step .where { grid-column: 2; text-align: left; } }
+
+footer { padding-block: 4rem 3rem; color: var(--muted); font-size: .85rem; }
+footer .wrap { display: grid; gap: 1.2rem; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- The ExtraMile mark: an E in a tile whose middle stroke runs past the edge. -->
+    <symbol id="mark" viewBox="0 0 64 48">
+      <rect x="0" y="0" width="48" height="48" rx="12" style="fill:var(--mark-tile)"/>
+      <rect x="12" y="11" width="6.5" height="26" rx="1.5" style="fill:var(--mark-fg)"/>
+      <rect x="12" y="11" width="23" height="6.5" rx="1.5" style="fill:var(--mark-fg)"/>
+      <rect x="12" y="30.5" width="23" height="6.5" rx="1.5" style="fill:var(--mark-fg)"/>
+      <rect x="12" y="20.75" width="52" height="6.5" rx="3.25" style="fill:var(--mark-bar)"/>
+    </symbol>
+    <!-- App icon: square crop, the stroke bleeds off the right edge. -->
+    <symbol id="appicon" viewBox="0 0 48 48">
+      <rect x="0" y="0" width="48" height="48" rx="11" fill="#0A1120"/>
+      <rect x="11" y="11" width="6.5" height="26" rx="1.5" fill="#FFFFFF"/>
+      <rect x="11" y="11" width="21" height="6.5" rx="1.5" fill="#FFFFFF"/>
+      <rect x="11" y="30.5" width="21" height="6.5" rx="1.5" fill="#FFFFFF"/>
+      <path d="M12.5 20.75H48v6.5H12.5a1.5 1.5 0 0 1-1.5-1.5v-3.5a1.5 1.5 0 0 1 1.5-1.5z" fill="#4470D6"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="M8 1.2 9.6 2.4l2 .1.6 1.9 1.6 1.2-.6 1.9.6 1.9-1.6 1.2-.6 1.9-2 .1L8 14l-1.6-1.2-2-.1-.6-1.9L2.2 9.6l.6-1.9-.6-1.9 1.6-1.2.6-1.9 2-.1z" fill="currentColor" opacity=".25"/><path d="m5.3 8.1 1.8 1.8 3.6-3.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 16 16"><path d="M8 1.5 13 3.5v4c0 3.2-2.2 5.6-5 6.9-2.8-1.3-5-3.7-5-6.9v-4z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-top">
+      <span class="eyebrow">Brand identity · v1.0 · November 2026</span>
+      <span class="eyebrow">Accra, Ghana</span>
+    </div>
+    <div class="hero-logo" role="img" aria-label="ExtraMile logo">
+      <svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg>
+      <span class="wm">extramile</span>
+    </div>
+    <h1>Genuine tech, <em>guaranteed</em>, delivered further than anyone else in Accra will take it.</h1>
+    <div class="mileline"></div>
+    <div class="hero-meta">
+      <div><b>Covers</b>Storefront, back-office, invoices, packaging, social, SMS</div>
+      <div><b>Replaces</b>The iOS-styled interim look (2026)</div>
+      <div><b>Palette</b>H · Sapphire &amp; Platinum, white by day, Onyx by night</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- 01 -->
+<section class="ch" id="audit">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="row"><span class="ch-num">01 · Why we're changing</span><span class="eyebrow">Audit</span></div>
+      <h2>We looked like Apple's settings screen.</h2>
+      <p class="lede">The shop runs well. It just doesn't look like anyone in particular. Every colour, radius and font was borrowed from iOS, and the only mark was a letter E in a black square.</p>
+    </div>
+    <div class="audit">
+      <div class="panel col">
+        <span class="tag old">Today</span>
+        <ul>
+          <li><b>Colour:</b> iOS systemBlue <span class="mono">#007AFF</span> as primary, iOS orange <span class="mono">#FF9500</span> used ad hoc, systemGroupedBackground grey.</li>
+          <li><b>Mark:</b> a typed "E" in a 28px black square. The desktop app icon is a flat blue square.</li>
+          <li><b>Type:</b> SF Pro on Apple devices, Inter elsewhere, Segoe UI in the back-office. Three different looks on three machines.</li>
+          <li><b>Message:</b> none. Nothing on screen says why to buy here over an Instagram seller.</li>
+        </ul>
+      </div>
+      <div class="panel col">
+        <span class="tag new">Rebrand</span>
+        <ul>
+          <li><b>Colour:</b> Ink Navy and Sapphire on white by day, Ice Blue on Onyx by night. Platinum, the metal, is kept for one job: paying.</li>
+          <li><b>Mark:</b> an E whose middle stroke runs past its frame. It's the name drawn as a shape.</li>
+          <li><b>Type:</b> Bricolage Grotesque for headlines and prices, Inter for reading, JetBrains Mono for IMEIs and order numbers. Bundled, so it looks the same everywhere.</li>
+          <li><b>Message:</b> the reason to trust us, stated plainly on every page: verified, covered, tracked.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="ch" id="positioning">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="mileline"></div>
+      <div class="row"><span class="ch-num">02 · Positioning</span><span class="eyebrow">Strategy</span></div>
+      <h2>Buying a phone in Accra shouldn't be a gamble.</h2>
+      <p class="lede">Most electronics in the city still sell over WhatsApp DMs. Nobody can show you real stock, the warranty is a promise, and a receipt is a screenshot. ExtraMile wins by doing the dull, careful work the DM sellers skip.</p>
+    </div>
+    <div class="grid" style="gap:2.5rem">
+      <div class="grid" style="gap:.8rem">
+        <span class="eyebrow">Brand promise</span>
+        <p class="promise">Genuine. <span>Guaranteed.</span> Delivered.</p>
+      </div>
+      <div class="grid g3">
+        <div class="panel pillar">
+          <span class="k">Pillar 1</span>
+          <h3>Verified</h3>
+          <p>Every serialised device is IMEI-checked before it's listed, and the number prints on your receipt. The stock count you see is the stock on our shelf.</p>
+        </div>
+        <div class="panel pillar">
+          <span class="k">Pillar 2</span>
+          <h3>Covered</h3>
+          <p>The warranty is a record, not a sentence on a sticker. Months, provider and start date live on your order, and you can look them up any time.</p>
+        </div>
+        <div class="panel pillar">
+          <span class="k">Pillar 3</span>
+          <h3>Tracked</h3>
+          <p>Pay with MoMo or card and you'll know where the order is at every stage, from paid to packed to on its way to East Legon or Kumasi.</p>
+        </div>
+      </div>
+      <div class="grid g2">
+        <div class="grid" style="gap:.8rem">
+          <span class="eyebrow">Personality: we are / we are not</span>
+          <div class="traits">
+            <span class="trait">Straight-talking <s>salesy</s></span>
+            <span class="trait">Careful <s>fussy</s></span>
+            <span class="trait">Quick <s>rushed</s></span>
+            <span class="trait">Proudly Accra <s>"imported luxury"</s></span>
+            <span class="trait">Warm <s>chummy</s></span>
+          </div>
+        </div>
+        <div class="grid" style="gap:.8rem">
+          <span class="eyebrow">Who we're talking to</span>
+          <p style="color:var(--muted)">A buyer on a phone, mid-afternoon, comparing three handsets and two prices. They've been burned before by a "new" phone that was refurbished. Six in ten of them will never make an account. Give them proof, a price and a way to pay inside a minute.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="ch" id="voice">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="mileline"></div>
+      <div class="row"><span class="ch-num">03 · Voice</span><span class="eyebrow">Words</span></div>
+      <h2>Say the fact, then stop.</h2>
+      <p class="lede">We sound like the most trusted person at the counter: specific, calm and done talking once you have what you need. Prices in cedis with two decimals. Specs as numbers. No exclamation marks, no "amazing", no emoji in the product.</p>
+    </div>
+    <div class="vtable">
+      <div class="vhead"><span class="eyebrow">Where</span><span class="eyebrow">Not this</span><span class="eyebrow">This</span></div>
+      <div class="vrow"><span class="ctx">Product title</span><span class="no">🔥 AMAZING iPhone deal!!! Best quality guaranteed</span><span class="yes">iPhone 15, 128 GB, Black. Sealed, IMEI-checked, 12-month warranty.</span></div>
+      <div class="vrow"><span class="ctx">Payment failed</span><span class="no">Oops! Something went wrong 😢 Please try again later.</span><span class="yes">MoMo didn't confirm the payment, so you haven't been charged. Approve the prompt on your phone, or pay by card.</span></div>
+      <div class="vrow"><span class="ctx">Low stock</span><span class="no">Hurry!! Selling fast, don't miss out!</span><span class="yes">2 left at our Accra store.</span></div>
+      <div class="vrow"><span class="ctx">Delivery fee</span><span class="no">Shipping charges may apply depending on location.</span><span class="yes">Delivery to Greater Accra: GH₵ 35.00. Pickup from the shop is free.</span></div>
+      <div class="vrow"><span class="ctx">Open-box item</span><span class="no">Like new!</span><span class="yes">Open box: opened for a demo, never activated. Full 12-month warranty.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="ch" id="logo">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="mileline"></div>
+      <div class="row"><span class="ch-num">04 · Logo</span><span class="eyebrow">Mark &amp; wordmark</span></div>
+      <h2>The stroke that goes past the line.</h2>
+      <p class="lede">The mark is an E set in a rounded tile, the shape of a phone or an app. Its middle stroke keeps going after the frame stops. That one stroke is the name: we go the extra mile. It's also the brand's single graphic idea, reused as the order-tracking line and the mile-line rule on this page.</p>
+    </div>
+
+    <div class="anatomy" style="margin-bottom:1rem">
+      <div class="stage" style="min-height:300px">
+        <svg viewBox="-8 -8 80 64" style="width:min(100%,340px);height:auto" role="img" aria-label="Logo construction grid">
+          <g stroke="var(--line)" stroke-width=".25">
+            <path d="M-8 0H72M-8 48H72M0 -8V56M48 -8V56M12 -8V56M64 -8V56M-8 11H72M-8 37H72M-8 20.75H72M-8 27.25H72"/>
+          </g>
+          <use href="#mark" width="64" height="48"/>
+          <g fill="var(--muted)" font-family="JetBrains Mono, monospace" font-size="2.6">
+            <text x="49" y="-2.5">48</text>
+            <text x="55" y="31.5">+16</text>
+            <text x="-7" y="25">x</text>
+          </g>
+        </svg>
+        <span class="cap">Construction</span>
+      </div>
+      <ol>
+        <li><b>Tile:</b> 48 × 48 units, 12-unit corner radius, matching the storefront's card radius.</li>
+        <li><b>Strokes:</b> all 6.5 units thick. Top and bottom arms are 23 units long.</li>
+        <li><b>The extra mile:</b> the middle stroke is 52 units and leaves the tile by 16, a third of the tile's width. It's the only rounded-end stroke and the only one in colour: Stroke Blue, which holds 4:1 contrast on white, Ink Navy and Onyx alike.</li>
+        <li><b>Clear space:</b> keep one tile-height ÷ 4 (call it <span class="mono">x</span>) empty on every side, measured from the end of the stroke on the right.</li>
+        <li><b>Wordmark:</b> "extramile", lowercase, Bricolage Grotesque ExtraBold at −5.5% tracking. Lowercase keeps it friendly and stops "ExtraMile" reading as two words.</li>
+      </ol>
+    </div>
+
+    <div class="grid g2" style="margin-bottom:1rem">
+      <div class="stage">
+        <div class="lockup"><svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg><div><span class="wm">extramile</span><span class="desc">Electronics</span></div></div>
+        <span class="cap">Primary lockup · Day (white)</span>
+      </div>
+      <div class="stage dark">
+        <div class="lockup"><svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg><div><span class="wm">extramile</span><span class="desc">Electronics</span></div></div>
+        <span class="cap">Primary lockup · Night (Onyx)</span>
+      </div>
+      <div class="stage green">
+        <div class="stacked"><svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg><span class="wm">extramile</span></div>
+        <span class="cap">Stacked · on Sapphire (stroke turns Ice)</span>
+      </div>
+      <div class="stage gold">
+        <div class="lockup"><svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg><span class="wm">extramile</span></div>
+        <span class="cap">One-colour · on Platinum</span>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-bottom:1rem">
+      <div class="panel">
+        <span class="label">Minimum sizes</span>
+        <div class="sizes">
+          <div><svg viewBox="0 0 64 48" width="64" height="48" aria-hidden="true"><use href="#mark"/></svg>64 px</div>
+          <div><svg viewBox="0 0 64 48" width="40" height="30" aria-hidden="true"><use href="#mark"/></svg>40 px</div>
+          <div><svg viewBox="0 0 64 48" width="24" height="18" aria-hidden="true"><use href="#mark"/></svg>24 px min</div>
+          <div><svg viewBox="0 0 48 48" width="16" height="16" aria-hidden="true"><use href="#appicon"/></svg>16 px favicon</div>
+        </div>
+        <p>Below 24 px wide, switch to the square app-icon crop, where the stroke bleeds off the edge instead of past it.</p>
+      </div>
+      <div class="panel">
+        <span class="label">Naming</span>
+        <p><b style="color:var(--fg)">In logos:</b> extramile (lowercase, as drawn).<br><b style="color:var(--fg)">In sentences:</b> ExtraMile. The full name ExtraMile Electronics appears in legal text, invoices and the page title, not in headlines.<br><b style="color:var(--fg)">Back-office app:</b> ExtraMile Counter.</p>
+      </div>
+    </div>
+
+    <span class="eyebrow" style="display:block;margin:2rem 0 .8rem">Don't</span>
+    <div class="misuse">
+      <figure><div class="box"><svg viewBox="0 0 64 48" aria-hidden="true" style="transform:scaleX(1.5)"><use href="#mark"/></svg></div><figcaption>Stretch or squash it.</figcaption></figure>
+      <figure><div class="box"><svg viewBox="0 0 64 48" aria-hidden="true" style="--mark-bar:#FF9500"><use href="#mark"/></svg></div><figcaption>Recolour the stroke outside the palette.</figcaption></figure>
+      <figure><div class="box"><svg viewBox="0 0 48 48" aria-hidden="true" style="width:48px"><use href="#mark" width="64" height="48"/></svg></div><figcaption>Crop the stroke at the tile edge in a lockup.</figcaption></figure>
+      <figure><div class="box"><svg viewBox="0 0 64 48" aria-hidden="true" style="transform:rotate(-12deg)"><use href="#mark"/></svg></div><figcaption>Rotate or animate the tile.</figcaption></figure>
+      <figure><div class="box" style="background:linear-gradient(135deg,#7A3CFF,#00A3FF)"><svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg></div><figcaption>Place it on busy gradients or photos.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="ch" id="colour">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="mileline"></div>
+      <div class="row"><span class="ch-num">05 · Colour</span><span class="eyebrow">Palette H · Sapphire &amp; Platinum</span></div>
+      <h2>White by day, Onyx by night.</h2>
+      <p class="lede">The palette borrows from flagship phone launches: ink navy, sapphire and a cool platinum, the colour of brushed metal. The shop itself stays out of the way, pure white in the day and Onyx black at night, so the products do the talking. Sapphire is the action by day; Ice Blue takes over at night. Platinum has one job: paying.</p>
+    </div>
+
+    <div class="grid g2" style="margin-bottom:1rem">
+      <div class="daynight" style="background:#FFFFFF;color:#0A1120;border:1px solid #E4E8EE">
+        <div class="dn-head"><span class="dn-tag" style="background:#F4F6F9;color:#5B6672">Day</span><span class="mono" style="color:#5B6672">White · 06:00–18:00 or light mode</span></div>
+        <span class="dn-title">Galaxy A55 5G</span>
+        <span style="color:#5B6672;font-size:.88rem">IMEI-checked · 12-month warranty</span>
+        <div class="btns"><span class="b" style="background:#1F3A68;color:#FFF">Add to bag</span><span class="b" style="background:#D5DAE2;color:#0A1120;box-shadow:inset 0 0 0 1px #B9C1CE">Pay with MoMo</span></div>
+        <span style="color:#1F3A68;font-weight:600;font-size:.9rem">Compare with A35</span>
+      </div>
+      <div class="daynight" style="background:#0B0B0C;color:#F2F0EC;border:1px solid #0B0B0C">
+        <div class="dn-head"><span class="dn-tag" style="background:#1C1C1F;color:#A6A39C">Night</span><span class="mono" style="color:#A6A39C">Onyx · follows dark mode</span></div>
+        <span class="dn-title">Galaxy A55 5G</span>
+        <span style="color:#A6A39C;font-size:.88rem">IMEI-checked · 12-month warranty</span>
+        <div class="btns"><span class="b" style="background:#AFC4EE;color:#0B0B0C">Add to bag</span><span class="b" style="background:#D5DAE2;color:#0A1120">Pay with MoMo</span></div>
+        <span style="color:#AFC4EE;font-weight:600;font-size:.9rem">Compare with A35</span>
+      </div>
+    </div>
+
+    <div class="swatches" style="margin-bottom:1rem">
+      <div class="sw"><div class="chip" style="background:#0A1120;color:#FFF">Ink Navy</div><div class="info"><b>Text by day, logo tile, covers</b><span class="mono">#0A1120 · hsl 221 52% 8%</span></div></div>
+      <div class="sw"><div class="chip" style="background:#1F3A68;color:#FFF">Sapphire</div><div class="info"><b>Primary action and links by day</b><span class="mono">#1F3A68 · hsl 218 54% 26%</span></div></div>
+      <div class="sw"><div class="chip" style="background:#AFC4EE;color:#0A1120">Ice Blue</div><div class="info"><b>Primary action and links by night</b><span class="mono">#AFC4EE · hsl 220 65% 81%</span></div></div>
+      <div class="sw"><div class="chip" style="background:#D5DAE2;color:#0A1120">Platinum</div><div class="info"><b>MoMo button, warranty badge, packaging</b><span class="mono">#D5DAE2 · hsl 217 18% 86%</span></div></div>
+      <div class="sw"><div class="chip" style="background:#4470D6;color:#FFF">Stroke Blue</div><div class="info"><b>The logo's extra stroke, focus rings</b><span class="mono">#4470D6 · hsl 222 64% 55%</span></div></div>
+      <div class="sw"><div class="chip" style="background:#FFFFFF;color:#0A1120;box-shadow:inset 0 -1px 0 #E4E8EE">White</div><div class="info"><b>Day background and cards</b><span class="mono">#FFFFFF · hairline #E4E8EE</span></div></div>
+      <div class="sw"><div class="chip" style="background:#0B0B0C;color:#F2F0EC">Onyx</div><div class="info"><b>Night background; cards #151517</b><span class="mono">#0B0B0C · hsl 240 4% 5%</span></div></div>
+      <div class="sw"><div class="chip" style="background:#C8372D;color:#FFF">Signal Red</div><div class="info"><b>Errors and low stock only</b><span class="mono">#C8372D day · #FF7A6E night</span></div></div>
+    </div>
+
+    <div class="grid g2">
+      <div class="panel">
+        <span class="label">Proportion on a typical screen</span>
+        <div class="ratio" aria-label="Day: seven parts white, one and a half parts Ink Navy, one part Sapphire, half a part Platinum">
+          <div style="background:#FFFFFF;color:#5B6672;grid-column:span 7">White 70%</div>
+          <div style="background:#0A1120;color:#FFF;grid-column:span 1">Ink</div>
+          <div style="background:#1F3A68;color:#FFF">Sapph.</div>
+          <div style="background:#D5DAE2;color:#0A1120">Plat.</div>
+        </div>
+        <div class="ratio" aria-label="Night: seven parts Onyx, one and a half parts card grey, one part Ice Blue, half a part Platinum">
+          <div style="background:#0B0B0C;color:#A6A39C;grid-column:span 7">Onyx 70%</div>
+          <div style="background:#1C1C1F;color:#A6A39C">Card</div>
+          <div style="background:#AFC4EE;color:#0B0B0C">Ice</div>
+          <div style="background:#D5DAE2;color:#0A1120">Plat.</div>
+        </div>
+        <p>Platinum is close to white, so a platinum button on a white page always gets a 1px edge (#B9C1CE). At night it needs none.</p>
+      </div>
+      <div class="panel">
+        <span class="label">Contrast (WCAG 2.2)</span>
+        <div class="scroll">
+          <table class="contrast tnum">
+            <thead><tr><th>Pair</th><th>Ratio</th><th>Use</th></tr></thead>
+            <tbody>
+              <tr><td><span class="pv" style="background:#FFF;color:#1F3A68;box-shadow:inset 0 0 0 1px #E4E8EE">Sapphire on white</span></td><td>11.27</td><td class="ok">AAA</td></tr>
+              <tr><td><span class="pv" style="background:#0B0B0C;color:#AFC4EE">Ice on Onyx</span></td><td>11.20</td><td class="ok">AAA</td></tr>
+              <tr><td><span class="pv" style="background:#D5DAE2;color:#0A1120">Ink on Platinum</span></td><td>13.43</td><td class="ok">AAA</td></tr>
+              <tr><td><span class="pv" style="background:#FFF;color:#5B6672;box-shadow:inset 0 0 0 1px #E4E8EE">Slate on white</span></td><td>5.85</td><td class="ok">AA text</td></tr>
+              <tr><td><span class="pv" style="background:#0B0B0C;color:#A6A39C">Stone on Onyx</span></td><td>7.81</td><td class="ok">AAA</td></tr>
+              <tr><td><span class="pv" style="background:#FFF;color:#4470D6;box-shadow:inset 0 0 0 1px #E4E8EE">Stroke on white</span></td><td>4.63</td><td class="ok">Graphics, large text</td></tr>
+              <tr><td><span class="pv" style="background:#FFF;color:#D5DAE2;box-shadow:inset 0 0 0 1px #E4E8EE">Platinum on white</span></td><td>1.40</td><td class="warn">Never as text</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="ch" id="type">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="mileline"></div>
+      <div class="row"><span class="ch-num">06 · Typography</span><span class="eyebrow">Three faces, three jobs</span></div>
+      <h2>Loud prices, quiet paragraphs, exact numbers.</h2>
+      <p class="lede">All three are open-source Google Fonts, loaded through <span class="mono">next/font</span> on the web and bundled in the Tauri app, so the counter and the shop finally match.</p>
+    </div>
+    <div class="faces">
+      <div class="panel face"><span class="label">Display</span><span class="big" style="font-family:var(--f-display);font-weight:780">Aa</span><b>Bricolage Grotesque</b><p>Headlines, prices, the wordmark. Its slightly inky, squeezed letters feel made by hand, which keeps big type warm. 680–780 weight.</p></div>
+      <div class="panel face"><span class="label">Text</span><span class="big" style="font-weight:600">Aa</span><b>Inter</b><p>Everything you read: specs, buttons, forms, emails. Already in the codebase, so the switch costs nothing. 400–600 weight.</p></div>
+      <div class="panel face"><span class="label">Data</span><span class="big" style="font-family:var(--f-mono);font-weight:500">Aa</span><b>JetBrains Mono</b><p>IMEIs, SKUs, order numbers, MoMo references. Anything a customer might read aloud to support, digit by digit.</p></div>
+    </div>
+    <div class="specimen">
+      <div class="spec-row"><span class="meta">Display 1<br>Bricolage 780 · 72/72 · −5%</span><span class="t-d1">Real stock. Real warranty.</span></div>
+      <div class="spec-row"><span class="meta">Display 2<br>Bricolage 720 · 44/46 · −4%</span><span class="t-d2">Phones, laptops and audio, IMEI-checked before they're listed.</span></div>
+      <div class="spec-row"><span class="meta">Heading<br>Bricolage 680 · 24/30 · −2.5%</span><span class="t-h">Samsung Galaxy A55 5G</span></div>
+      <div class="spec-row"><span class="meta">Price<br>Bricolage 750 · tabular</span><span class="t-price"><small>GH₵</small>5,299.00</span></div>
+      <div class="spec-row"><span class="meta">Body<br>Inter 400 · 16/26</span><span class="t-body">6.6-inch Super AMOLED display, Exynos 1480, 8 GB RAM, 256 GB storage, 5,000 mAh battery. Sealed box, opened only to check the IMEI against the manufacturer's record.</span></div>
+      <div class="spec-row"><span class="meta">Data<br>JetBrains Mono 500</span><span class="t-mono">IMEI 35 209611 482093 7 · SKU SAM-A55-256-NVY</span></div>
+      <div class="spec-row" style="border-bottom:0"><span class="meta">Caption<br>Inter 400 · 13/20</span><span class="t-small">Prices include VAT. Delivery fee is worked out at checkout from your zone.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="ch" id="components">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="mileline"></div>
+      <div class="row"><span class="ch-num">07 · Interface</span><span class="eyebrow">Components</span></div>
+      <h2>The same three promises, as UI.</h2>
+      <p class="lede">Badges carry the pillars onto every product card. The order tracker is the logo's extra stroke drawn as a road. Corners are 10px on controls and 16px on cards, down from iOS's 14px everywhere, so the shop looks firmer.</p>
+    </div>
+    <div class="grid g2" style="margin-bottom:1rem">
+      <div class="panel" style="gap:1.25rem">
+        <span class="label">Buttons</span>
+        <div class="btns">
+          <button class="b b-primary" type="button">Add to bag</button>
+          <button class="b b-momo" type="button">Pay with MoMo</button>
+          <button class="b b-ink" type="button">Checkout</button>
+          <button class="b b-ghost" type="button">Compare</button>
+        </div>
+        <span class="label">Trust badges</span>
+        <div class="badges">
+          <span class="bd bd-verified"><svg aria-hidden="true"><use href="#i-check"/></svg>IMEI verified</span>
+          <span class="bd bd-warranty"><svg aria-hidden="true"><use href="#i-shield"/></svg>12-mo warranty</span>
+          <span class="bd bd-open">Open box</span>
+          <span class="bd bd-low">2 left</span>
+        </div>
+        <p>Sapphire (Ice at night) is for adding and confirming. Platinum is for paying with MoMo. Ink is for the step that commits. A screen gets one platinum button at most.</p>
+      </div>
+      <div class="panel" style="gap:1rem">
+        <span class="label">Fields</span>
+        <div class="fields">
+          <div class="fld"><label for="f1">MoMo number</label><div class="in focus" id="f1"><span class="pre">+233</span>24 412 0937</div><div class="hint">MTN, Telecel or AirtelTigo. We'll send a prompt to approve.</div></div>
+          <div class="fld"><label for="f2">Delivery zone</label><div class="in" id="f2">Greater Accra · GH₵ 35.00</div></div>
+          <div class="fld"><label for="f3">Email</label><div class="in" id="f3" style="border-color:var(--red)">ama.mensah@</div><div class="hint err">Add the part after @, for example ama.mensah@gmail.com.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid g2">
+      <div class="panel" style="justify-items:center">
+        <span class="label" style="justify-self:start">Product card</span>
+        <article class="pcard">
+          <div class="img"><span class="sticker bd bd-verified"><svg aria-hidden="true"><use href="#i-check"/></svg>IMEI verified</span><div class="phone-art"></div></div>
+          <div class="body">
+            <span class="brand">Samsung</span>
+            <span class="name">Galaxy A55 5G, 256 GB, Awesome Navy</span>
+            <span class="specs">8 GB RAM · 6.6″ AMOLED · 5,000 mAh</span>
+            <div class="badges"><span class="bd bd-warranty"><svg aria-hidden="true"><use href="#i-shield"/></svg>12-mo warranty</span></div>
+            <div class="pr"><b>GH₵ 5,299.00</b><s>GH₵ 5,750.00</s></div>
+          </div>
+        </article>
+      </div>
+      <div class="panel" style="gap:1.2rem">
+        <span class="label">Order tracker: the extra stroke as a road</span>
+        <div class="tracker">
+          <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><b class="mono" style="font-size:.9rem">EM-2611-0482</b><span style="font-size:.85rem;color:var(--muted)">East Legon · Greater Accra</span></div>
+          <div class="track">
+            <div class="stop done"><b>Paid</b><span>MoMo · 09:14</span></div>
+            <div class="stop done"><b>Packed</b><span>IMEI logged · 11:02</span></div>
+            <div class="stop now"><b>On the way</b><span>Rider left 13:40</span></div>
+            <div class="stop"><b>Delivered</b><span>Est. 14:30–16:00</span></div>
+          </div>
+        </div>
+        <p>Done steps are Sapphire (Ice at night), the current one is a ringed dot, the rest are hairline. The line itself is the logo's extra stroke, so every order shows the brand idea working.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="ch" id="applications">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="mileline"></div>
+      <div class="row"><span class="ch-num">08 · Applications</span><span class="eyebrow">In the world</span></div>
+      <h2>From the home page to the box on the doorstep.</h2>
+    </div>
+
+    <div class="mock-site" style="margin-bottom:1rem">
+      <div class="ms-bar">
+        <div class="lockup"><svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg><span class="wm">extramile</span></div>
+        <nav><span>Phones</span><span>Laptops</span><span>Audio</span><span>Orders</span><span style="color:var(--fg);font-weight:600">Bag · 1</span></nav>
+      </div>
+      <div class="ms-hero">
+        <div>
+          <h4>Genuine phones, <em>checked</em> before they reach you.</h4>
+          <p>Every device is IMEI-verified, carries a warranty you can look up, and is tracked from our shelf to your door.</p>
+          <div class="btns"><button class="b b-primary" type="button">Shop phones</button><button class="b b-ghost" type="button">How we verify</button></div>
+          <div class="proof tnum"><div><b>100%</b>IMEI-checked</div><div><b>12 months</b>standard warranty</div><div><b>Same day</b>Accra Central</div></div>
+        </div>
+        <div class="art" aria-hidden="true"><div class="road"></div><div class="phone-art"></div></div>
+      </div>
+    </div>
+
+    <div class="grid g3" style="margin-bottom:1rem">
+      <div class="panel">
+        <span class="label">App icons</span>
+        <div class="appicons">
+          <div><svg viewBox="0 0 48 48" width="96" height="96" aria-hidden="true"><use href="#appicon"/></svg>Counter · 96</div>
+          <div><svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true"><use href="#appicon"/></svg>48</div>
+          <div><svg viewBox="0 0 48 48" width="32" height="32" aria-hidden="true"><use href="#appicon"/></svg>32</div>
+          <div><svg viewBox="0 0 48 48" width="16" height="16" aria-hidden="true"><use href="#appicon"/></svg>16</div>
+        </div>
+        <p>Replaces the flat blue square in <span class="mono">apps/desktop/app-icon.png</span> and every size Tauri generates from it, plus the storefront favicon.</p>
+      </div>
+      <div class="panel" style="padding:0;overflow:hidden">
+        <div class="sticker-box">
+          <div class="sticker">
+            <div class="top"><svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg><span class="mono" style="font-size:.7rem;color:#9AA6B2">EM-2611-0482</span></div>
+            <div class="big">Checked, sealed and on its way.</div>
+            <div class="seal">Seal broken before you opened it? Don't accept. Call the store.</div>
+            <div class="zone"><span>ZONE · GREATER ACCRA</span><span>1 of 1</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="social">
+        <span class="eyebrow" style="color:#AFC4EE">Just in</span>
+        <div class="grid" style="gap:.5rem"><span class="s-big">iPhone 15, 128 GB. Sealed and checked.</span><span class="s-price">GH₵ 9,450.00</span></div>
+        <div class="s-foot"><span>12-month warranty · MoMo or card</span><svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg></div>
+      </div>
+    </div>
+
+    <div class="grid g2">
+      <div class="panel" style="justify-items:center">
+        <span class="label" style="justify-self:start">Receipt / invoice</span>
+        <div class="receipt tnum">
+          <div class="r-head"><svg viewBox="0 0 64 48" aria-hidden="true"><use href="#mark"/></svg><b>extramile</b></div>
+          <div class="rl"><span>Order</span><span>EM-2611-0482</span></div>
+          <div class="rl"><span>Date</span><span>24 Nov 2026 09:14</span></div>
+          <hr>
+          <div class="rl"><span>Galaxy A55 5G 256GB ×1</span><span>5,299.00</span></div>
+          <div class="imei">IMEI 35 209611 482093 7<br>Warranty 12 mo · ends 24 Nov 2027</div>
+          <div class="rl" style="margin-top:.4rem"><span>Delivery · Greater Accra</span><span>35.00</span></div>
+          <hr>
+          <div class="rl tot"><span>Total GH₵</span><span>5,334.00</span></div>
+          <div class="rl"><span>Paid · MTN MoMo</span><span>…0937</span></div>
+          <div class="foot">ExtraMile Electronics, Accra. Keep this receipt: it's your warranty record.</div>
+        </div>
+      </div>
+      <div class="panel" style="justify-items:center">
+        <span class="label" style="justify-self:start">SMS</span>
+        <div class="sms">
+          <span class="from">ExtraMile</span>
+          <div class="bubble">ExtraMile: payment of GH₵ 5,334.00 received for order EM-2611-0482. We're checking and packing it now.</div>
+          <div class="bubble">ExtraMile: EM-2611-0482 is on the way to East Legon. Expect it between 2:30 and 4pm. Check the seal before you accept.</div>
+        </div>
+        <p>Sender ID "ExtraMile". Every SMS starts with the name, gives the order number, and ends with the one thing to do.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="ch" id="tokens">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="mileline"></div>
+      <div class="row"><span class="ch-num">09 · Tokens</span><span class="eyebrow">For the codebase</span></div>
+      <h2>Drop-in values, day and night.</h2>
+      <p class="lede">These replace the iOS overrides in <span class="mono">apps/web/src/app/globals.css</span> and <span class="mono">apps/desktop/src/index.css</span>. Same shadcn variable names, so components pick them up without changes. Night applies under a <span class="mono">.dark</span> class, set from the device's dark-mode setting.</p>
+    </div>
+    <div class="code-wrap">
+      <button class="copy" type="button" id="copy-tokens">Copy</button>
+<pre class="code" id="tokens-code"><span class="c">/* ExtraMile brand tokens, palette H — HSL channels for shadcn/Tailwind */</span>
+:root {                                  <span class="c">/* Day: White */</span>
+  --background: <span class="v">0 0% 100%</span>;
+  --foreground: <span class="v">221 52% 8%</span>;            <span class="c">/* Ink Navy */</span>
+  --card: <span class="v">0 0% 100%</span>;
+  --card-foreground: <span class="v">221 52% 8%</span>;
+  --popover: <span class="v">0 0% 100%</span>;
+  --popover-foreground: <span class="v">221 52% 8%</span>;
+  --primary: <span class="v">218 54% 26%</span>;              <span class="c">/* Sapphire #1F3A68 */</span>
+  --primary-foreground: <span class="v">0 0% 100%</span>;
+  --secondary: <span class="v">216 29% 97%</span>;
+  --secondary-foreground: <span class="v">221 52% 8%</span>;
+  --muted: <span class="v">216 29% 97%</span>;
+  --muted-foreground: <span class="v">211 11% 40%</span>;       <span class="c">/* Slate */</span>
+  --accent: <span class="v">216 23% 91%</span>;               <span class="c">/* hover fill */</span>
+  --accent-foreground: <span class="v">221 52% 8%</span>;
+  --brand-platinum: <span class="v">217 18% 86%</span>;        <span class="c">/* MoMo + warranty only */</span>
+  --brand-stroke: <span class="v">222 64% 55%</span>;          <span class="c">/* logo stroke, focus */</span>
+  --destructive: <span class="v">4 63% 48%</span>;
+  --success: <span class="v">218 54% 26%</span>;
+  --border: <span class="v">216 23% 91%</span>;
+  --input: <span class="v">216 23% 91%</span>;
+  --ring: <span class="v">222 64% 55%</span>;
+  --radius: <span class="v">0.625rem</span>;
+}
+
+.dark {                                  <span class="c">/* Night: Onyx */</span>
+  --background: <span class="v">240 4% 5%</span>;             <span class="c">/* #0B0B0C */</span>
+  --foreground: <span class="v">40 19% 94%</span>;
+  --card: <span class="v">240 5% 9%</span>;                   <span class="c">/* #151517 */</span>
+  --card-foreground: <span class="v">40 19% 94%</span>;
+  --popover: <span class="v">240 5% 9%</span>;
+  --popover-foreground: <span class="v">40 19% 94%</span>;
+  --primary: <span class="v">220 65% 81%</span>;              <span class="c">/* Ice Blue #AFC4EE */</span>
+  --primary-foreground: <span class="v">240 4% 5%</span>;
+  --secondary: <span class="v">240 5% 12%</span>;
+  --secondary-foreground: <span class="v">40 19% 94%</span>;
+  --muted: <span class="v">240 5% 12%</span>;
+  --muted-foreground: <span class="v">42 5% 63%</span>;         <span class="c">/* Stone */</span>
+  --accent: <span class="v">240 5% 12%</span>;
+  --accent-foreground: <span class="v">40 19% 94%</span>;
+  --destructive: <span class="v">5 100% 72%</span>;
+  --success: <span class="v">220 65% 81%</span>;
+  --border: <span class="v">240 3% 17%</span>;
+  --input: <span class="v">240 3% 17%</span>;
+  --ring: <span class="v">222 64% 55%</span>;
+}
+
+<span class="c">/* next/font: apps/web/src/app/layout.tsx */</span>
+--font-display: <span class="v">'Bricolage Grotesque'</span>;   <span class="c">/* 680–780 */</span>
+--font-sans:    <span class="v">'Inter'</span>;                 <span class="c">/* 400–600 */</span>
+--font-mono:    <span class="v">'JetBrains Mono'</span>;        <span class="c">/* 400–600 */</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="ch" id="rollout">
+  <div class="wrap">
+    <div class="ch-head">
+      <div class="mileline"></div>
+      <div class="row"><span class="ch-num">10 · Rollout</span><span class="eyebrow">Order of work</span></div>
+      <h2>Ship it in five passes.</h2>
+      <p class="lede">Each pass is a pull request that leaves both apps working, so nothing waits on a big-bang launch.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div><h3>Tokens, fonts and night mode</h3><p>Swap the theme variables, add the Onyx <span class="mono">.dark</span> theme that follows the device setting, load the three faces and delete the <span class="mono">.glass</span> iOS material. Every screen changes colour in one go.</p></div><span class="where">packages/ui, globals.css, index.css, layout.tsx</span></div>
+      <div class="step"><div><h3>Logo component and icons</h3><p>One <span class="mono">&lt;Logo /&gt;</span> SVG component in packages/ui; regenerate the Tauri icon set and the storefront favicon from the square crop.</p></div><span class="where">packages/ui, apps/desktop/src-tauri/icons</span></div>
+      <div class="step"><div><h3>Trust UI</h3><p>Verified and warranty badges on cards and product pages, the platinum MoMo button, and the mile-line order tracker.</p></div><span class="where">apps/web catalog, checkout, account/orders</span></div>
+      <div class="step"><div><h3>Documents and messages</h3><p>Invoice page, Resend emails and SMS copy rewritten in the new voice, with IMEI and warranty end date on every receipt.</p></div><span class="where">invoice page, email templates</span></div>
+      <div class="step"><div><h3>Off-screen</h3><p>Seal stickers for delivery bags, a rider ID card, shop signage and social templates, printed from this book.</p></div><span class="where">Print, social</span></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="mileline"></div>
+    <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <span>ExtraMile Electronics · Brand identity v1.0</span>
+      <span>Fonts: Bricolage Grotesque, Inter, JetBrains Mono (SIL Open Font License)</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+document.getElementById('copy-tokens').addEventListener('click', function () {
+  var btn = this, text = document.getElementById('tokens-code').innerText;
+  var done = function (msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = 'Copy'; }, 1600); };
+  try {
+    navigator.clipboard.writeText(text).then(function () { done('Copied'); }, function () { selectCode(); done('Press Ctrl+C'); });
+  } catch (e) { selectCode(); done('Press Ctrl+C'); }
+  function selectCode() { var r = document.createRange(); r.selectNodeContents(document.getElementById('tokens-code')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+});
+</script>

@@ -31,14 +31,14 @@ function Timeline({ status }: { status: string }) {
             {i > 0 && (
               <span
                 className={`absolute right-1/2 top-3.5 h-0.5 w-full -translate-y-1/2 ${
-                  done ? 'bg-primary' : 'bg-black/[0.08]'
+                  done ? 'bg-primary' : 'bg-foreground/[0.08]'
                 }`}
                 aria-hidden
               />
             )}
             <span
-              className={`relative flex size-7 items-center justify-center rounded-full text-white ${
-                done ? 'bg-primary' : 'bg-black/[0.12]'
+              className={`relative flex size-7 items-center justify-center rounded-full text-primary-foreground ${
+                done ? 'bg-primary' : 'bg-foreground/[0.12]'
               }`}
             >
               {done ? <Check className="size-4" aria-hidden /> : null}
@@ -127,7 +127,7 @@ export default async function OrderDetailPage({
             <dd>−{formatGHS(order.discount)}</dd>
           </div>
         )}
-        <div className="flex justify-between border-t border-black/[0.06] pt-3 text-[17px] font-bold">
+        <div className="flex justify-between border-t border-foreground/[0.06] pt-3 text-[17px] font-bold">
           <dt>Total</dt>
           <dd>{formatGHS(order.total)}</dd>
         </div>

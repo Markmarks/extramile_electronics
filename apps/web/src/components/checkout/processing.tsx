@@ -95,7 +95,7 @@ export function ProcessingPoller({ orderNumber }: { orderNumber: string }) {
   if (phase === 'timeout') {
     return (
       <State
-        icon={<Clock className="size-16 text-[#FF9500]" aria-hidden />}
+        icon={<Clock className="size-16 text-warning" aria-hidden />}
         title="Still confirming…"
         body="This is taking longer than usual. If you completed payment, it will confirm shortly."
       >

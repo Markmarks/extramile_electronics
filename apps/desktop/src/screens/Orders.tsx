@@ -349,7 +349,7 @@ export function Orders() {
                     )}
                   </p>
                   {detail.notes && (
-                    <p className="mt-2 rounded-lg bg-amber-500/10 px-3 py-2 text-[13px] text-amber-800">
+                    <p className="mt-2 rounded-lg bg-warning/10 px-3 py-2 text-[13px] text-warning">
                       Note: {detail.notes}
                     </p>
                   )}
@@ -414,7 +414,7 @@ export function Orders() {
                           {it.serials.length > 0 ? (
                             <span className="font-mono text-xs">{it.serials.join(', ')}</span>
                           ) : (
-                            <span className="text-xs text-amber-700">Not captured</span>
+                            <span className="text-xs text-warning">Not captured</span>
                           )}
                         </td>
                         <td className="text-right">
