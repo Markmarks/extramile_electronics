@@ -7,6 +7,9 @@ import { Breadcrumbs } from '@/components/catalog/breadcrumbs';
 import { ProductGrid } from '@/components/catalog/product-grid';
 import { SpecTable } from '@/components/catalog/spec-table';
 import { VariantSelector } from '@/components/catalog/variant-selector';
+import { ReviewList } from '@/components/reviews/review-list';
+import { Stars } from '@/components/reviews/stars';
+import { WriteReview } from '@/components/reviews/write-review';
 import {
   demoCatalogEnabled,
   demoListProducts,
@@ -14,6 +17,7 @@ import {
   isDemoId,
 } from '@/lib/catalog/demo';
 import { getProductBySlug, getRelatedProducts } from '@/lib/catalog/queries';
+import { getReviewSummary, type ReviewSummary } from '@/lib/reviews/queries';
 import { createPublicClient } from '@/lib/supabase/public';
 
 export const revalidate = 300;
@@ -61,13 +65,18 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const product = await loadProduct(slug);
   if (!product) notFound();
 
+  const demo = isDemoId(product.id);
   const related = !product.category
     ? []
-    : isDemoId(product.id)
+    : demo
       ? demoListProducts({ categoryId: product.category.id, sort: 'rating' })
           .items.filter((p) => p.id !== product.id)
           .slice(0, 4)
       : await getRelatedProducts(product.category.id, product.id);
+
+  // A reviews outage must not take the product page down with it.
+  const noReviews: ReviewSummary = { average: 0, count: 0, latest: [] };
+  const reviews = demo ? noReviews : await getReviewSummary(product.id).catch(() => noReviews);
 
   const prices = product.variants.map((v) => v.price);
   const low = prices.length ? Math.min(...prices) : 0;
@@ -83,12 +92,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     sku: product.variants[0]?.sku,
     image: image ? [image] : undefined,
     brand: product.brand ? { '@type': 'Brand', name: product.brand.name } : undefined,
-    ...(product.ratingCount > 0
+    // Search engines want the rating to match reviews a visitor can read on the page.
+    ...(reviews.count > 0
       ? {
           aggregateRating: {
             '@type': 'AggregateRating',
-            ratingValue: product.ratingAvg,
-            reviewCount: product.ratingCount,
+            ratingValue: reviews.average,
+            reviewCount: reviews.count,
           },
         }
       : {}),
@@ -161,6 +171,29 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <SpecTable specs={product.specs} schema={product.category?.specSchema ?? {}} />
         </section>
       </div>
+
+      <section id="reviews" className="mt-16 space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold">Customer reviews</h2>
+            {reviews.count > 0 && (
+              <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                <Stars rating={Math.round(reviews.average)} />
+                <span className="font-semibold text-foreground">{reviews.average.toFixed(1)}</span>
+                <span>
+                  · {reviews.count} review{reviews.count === 1 ? '' : 's'}
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+        {!demo && (
+          <div id="write-review" className="scroll-mt-24">
+            <WriteReview productId={product.id} slug={product.slug} />
+          </div>
+        )}
+        <ReviewList reviews={reviews.latest} />
+      </section>
 
       {related.length > 0 && (
         <section className="mt-16 space-y-4">

@@ -12,6 +12,7 @@ export interface OrderSummary {
 }
 
 export interface OrderItemView {
+  variantId: string | null;
   sku: string;
   title: string;
   attrs: Record<string, unknown>;
@@ -103,10 +104,13 @@ export async function getUserOrder(orderNumber: string): Promise<OrderView | nul
   const [itemsRes, payRes] = await Promise.all([
     supabase
       .from('order_items')
-      .select('sku, title, attrs, unit_price, qty, line_total, warranty_months, serials')
+      .select(
+        'variant_id, sku, title, attrs, unit_price, qty, line_total, warranty_months, serials',
+      )
       .eq('order_id', order.id)
       .returns<
         {
+          variant_id: string | null;
           sku: string;
           title: string;
           attrs: unknown;
@@ -147,6 +151,7 @@ export async function getUserOrder(orderNumber: string): Promise<OrderView | nul
     createdAt: order.created_at,
     updatedAt: order.updated_at,
     items: (itemsRes.data ?? []).map((i) => ({
+      variantId: i.variant_id,
       sku: i.sku,
       title: i.title,
       attrs: asRecord(i.attrs),
