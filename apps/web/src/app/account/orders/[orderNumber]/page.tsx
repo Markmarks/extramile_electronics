@@ -1,11 +1,12 @@
 import { formatGHS, STAFF_FULFILMENT_FLOW, type OrderStatus } from '@extramile/core';
-import { Check, FileText } from 'lucide-react';
+import { Check, FileText, Star } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { StatusPill } from '@/components/account/status-pill';
 import { Breadcrumbs } from '@/components/catalog/breadcrumbs';
 import { getUserOrder } from '@/lib/orders/queries';
+import { getReviewableItems, type ReviewableItem } from '@/lib/reviews/queries';
 
 export const metadata: Metadata = { title: 'Order' };
 export const dynamic = 'force-dynamic';
@@ -55,6 +56,24 @@ function Timeline({ status }: { status: string }) {
   );
 }
 
+function ReviewLink({ item }: { item: ReviewableItem | undefined }) {
+  if (!item) return null;
+  if (item.reviewed)
+    return (
+      <p className="pt-1 text-[13px] text-muted-foreground">
+        {item.published ? 'You reviewed this.' : 'Your review is awaiting approval.'}
+      </p>
+    );
+  return (
+    <Link
+      href={`/p/${item.slug}#write-review`}
+      className="inline-flex items-center gap-1 pt-1 text-[13px] font-medium text-primary"
+    >
+      <Star className="size-3.5" aria-hidden /> Write a review
+    </Link>
+  );
+}
+
 export default async function OrderDetailPage({
   params,
 }: {
@@ -63,6 +82,13 @@ export default async function OrderDetailPage({
   const { orderNumber } = await params;
   const order = await getUserOrder(orderNumber);
   if (!order) notFound();
+
+  const reviewable =
+    order.status === 'delivered'
+      ? await getReviewableItems(
+          order.items.flatMap((i) => (i.variantId ? [i.variantId] : [])),
+        ).catch(() => new Map<string, ReviewableItem>())
+      : new Map<string, ReviewableItem>();
 
   return (
     <main className="container max-w-2xl space-y-6 pb-20 pt-6">
@@ -106,6 +132,7 @@ export default async function OrderDetailPage({
                   IMEI/Serial: {item.serials.join(', ')}
                 </p>
               )}
+              <ReviewLink item={item.variantId ? reviewable.get(item.variantId) : undefined} />
             </div>
             <span className="text-[15px] font-medium">{formatGHS(item.lineTotal)}</span>
           </li>
