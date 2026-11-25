@@ -63,6 +63,30 @@ Operational playbook for ExtraMile Electronics. P0 = payment/auth incidents.
 - Monitor `outbox_pending()` growth; a stuck item shows an `error` and blocks later items for
   the same order (surfaced as a conflict for staff to resolve).
 
+## Pending configuration (open since 2026-11-24)
+The Supabase project moved to `odthylkirynqszhrrccj` on 2026-11-24. Production on Vercel
+(extramileelectronics.vercel.app) has the Supabase URL, anon key and service-role key, and
+`/api/health` reports `"db":"ok"`. Still to do. Secrets are pasted by a person, never by an agent:
+
+- **Vercel → extramile_electronics → Settings → Environment Variables**
+  - Tick **Preview** on `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+    `SUPABASE_SERVICE_ROLE_KEY` and `NEXT_PUBLIC_SITE_URL`. Preview deployments (every push
+    to a non-production branch) have no Supabase config until this is done.
+  - Add for Production + Preview: `PAYSTACK_SECRET_KEY`, `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`
+    (`sk_test_`/`pk_test_` until go-live), `RESEND_API_KEY`, `RESEND_FROM`
+    (e.g. `ExtraMile Electronics <orders@yourdomain>`).
+- **Supabase → Edge Functions → Secrets**: add `PAYSTACK_SECRET_KEY`, `RESEND_API_KEY`,
+  `RESEND_FROM`. Without them `paystack-webhook` rejects every callback, so paid orders are
+  never confirmed and the expiry job cancels them after 15 minutes. `admin-actions` can't
+  refund or send dispatch/delivery emails either.
+- **Schedule `reconcile-pending`** (the safety net for missed webhooks). See the comment at
+  the end of `supabase/migrations/20260729000007_rpcs.sql`.
+- **Product images**: the 30 `seed/*.webp` files referenced by `product_images` are not in
+  the `product-images` bucket yet, so the storefront shows broken images.
+- After changing Vercel variables, **Redeploy** production (Deployments → ⋯ → Redeploy).
+  Then check `curl https://extramileelectronics.vercel.app/api/health` reports
+  `"db":"ok"`, and place a test order with a Paystack test card.
+
 ## Deferred to wire before launch
 - Sentry (client/server/edge) with PII scrubbing + alert rules (payment-failure spike,
   paid > 5 min unconfirmed, 5xx, webhook signature failures).

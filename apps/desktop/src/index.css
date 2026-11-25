@@ -1,82 +1,131 @@
-:root {
-  color-scheme: light dark;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Back-office theme — the storefront's calm palette (apps/web/globals.css), tuned for a
+ * dense desk app. Doubled :root out-ranks the shared tokens.css regardless of order.
+ */
+:root:root {
+  color-scheme: light;
+  --background: 240 10% 97%;
+  --foreground: 240 6% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 6% 10%;
+  --primary: 211 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 6% 94%;
+  --secondary-foreground: 240 6% 10%;
+  --muted: 240 6% 95%;
+  --muted-foreground: 240 4% 46%;
+  --accent: 240 6% 94%;
+  --accent-foreground: 240 6% 10%;
+  --destructive: 3 85% 55%;
+  --success: 140 60% 38%;
+  --border: 240 6% 90%;
+  --input: 240 6% 86%;
+  --ring: 211 100% 50%;
+  --radius: 0.625rem;
 }
-* {
-  box-sizing: border-box;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+  body {
+    @apply bg-background text-[13px] text-foreground antialiased;
+    font-family:
+      'Segoe UI Variable Text',
+      'Segoe UI',
+      -apple-system,
+      BlinkMacSystemFont,
+      Roboto,
+      sans-serif;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
+  }
 }
-body {
-  margin: 0;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-}
-.screen {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-.center {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-}
-.card {
-  width: 100%;
-  max-width: 22rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.6rem;
-  padding: 1.5rem;
-  background: hsl(var(--card));
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.btn {
-  padding: 0.55rem 0.9rem;
-  border-radius: 0.4rem;
-  border: 1px solid hsl(var(--primary));
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  font-weight: 600;
-  cursor: pointer;
-}
-.btn.secondary {
-  background: transparent;
-  color: hsl(var(--foreground));
-  border-color: hsl(var(--border));
-}
-.btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-.input {
-  padding: 0.55rem 0.7rem;
-  border-radius: 0.4rem;
-  border: 1px solid hsl(var(--input));
-  background: hsl(var(--background));
-  color: inherit;
-}
-.muted {
-  color: hsl(var(--muted-foreground));
-  font-size: 0.85rem;
-}
-.error {
-  color: hsl(var(--destructive));
-  font-size: 0.85rem;
-}
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid hsl(var(--border));
-}
-.lock-overlay {
-  position: fixed;
-  inset: 0;
-  background: hsl(var(--background));
-  display: grid;
-  place-items: center;
-  z-index: 50;
+
+@layer components {
+  .card {
+    @apply rounded-xl border bg-card;
+  }
+  .card-header {
+    @apply flex items-center justify-between gap-3 border-b px-4 py-3;
+  }
+  .card-title {
+    @apply text-sm font-semibold;
+  }
+
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger {
+    @apply inline-flex h-8 select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn,
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  .btn-secondary,
+  .btn.secondary {
+    @apply border bg-card text-foreground hover:bg-secondary;
+  }
+  .btn-ghost {
+    @apply text-muted-foreground hover:bg-secondary hover:text-foreground;
+  }
+  .btn-danger {
+    @apply border border-destructive/30 bg-card text-destructive hover:bg-destructive/5;
+  }
+  .btn-lg {
+    @apply h-10 px-4 text-sm;
+  }
+
+  .input {
+    @apply h-8 w-full rounded-lg border border-input bg-card px-2.5 text-[13px] text-foreground transition-shadow placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60;
+  }
+  textarea.input {
+    @apply h-auto py-2;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium text-muted-foreground;
+  }
+  .muted {
+    @apply text-muted-foreground;
+  }
+  .error {
+    @apply text-destructive;
+  }
+
+  .table {
+    @apply w-full border-collapse text-left;
+  }
+  .table th {
+    @apply sticky top-0 z-10 border-b bg-card px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground;
+  }
+  .table td {
+    @apply border-b px-4 py-2.5 align-middle;
+  }
+  .table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .table tbody tr {
+    @apply transition-colors hover:bg-secondary/50;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold capitalize;
+  }
+  .kbd {
+    @apply rounded border bg-secondary px-1 font-mono text-[10px] text-muted-foreground;
+  }
 }

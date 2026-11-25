@@ -28,9 +28,48 @@ function json(body: unknown, status = 200): Response {
 }
 
 // Actions only an admin (not staff) may perform.
-const ADMIN_ONLY = new Set(['role_change', 'staff_invite']);
+const ADMIN_ONLY = new Set(['role_change', 'staff_invite', 'device_revoke', 'device_restore']);
 
-Deno.serve(async (req) => {
+// The back-office calls this from a webview, so the browser enforces CORS: it sends an
+// OPTIONS preflight first and drops the call unless the response allows the origin.
+// Origins: the Tauri app on Windows (WebView2 → http(s)://tauri.localhost), macOS/Linux
+// (tauri://localhost), and `vite dev` on :1420. CORS is not the security boundary — every
+// call still needs a valid staff/admin JWT and is role-checked below.
+const ALLOWED_ORIGINS = new Set([
+  'http://tauri.localhost',
+  'https://tauri.localhost',
+  'tauri://localhost',
+  'http://localhost:1420',
+]);
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin');
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers':
+      req.headers.get('Access-Control-Request-Headers') ??
+      'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  };
+}
+
+Deno.serve(async (req: Request) => {
+  const cors = corsHeaders(req);
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: cors['Access-Control-Allow-Origin'] ? 204 : 403,
+      headers: cors,
+    });
+  }
+  const res = await handleRequest(req);
+  for (const [k, v] of Object.entries(cors)) res.headers.set(k, v);
+  return res;
+});
+
+async function handleRequest(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 
   const authHeader = req.headers.get('Authorization') ?? '';
@@ -76,6 +115,28 @@ Deno.serve(async (req) => {
     return json({ error: 'forbidden' }, 403);
   }
 
+  // A revoked back-office PC (lost/stolen) may not do privileged work, even with a still-
+  // valid session. Unknown device ids are allowed: the app registers itself on unlock.
+  if (body.device_id && body.source !== 'web') {
+    const { data: dev } = await admin
+      .from('staff_devices')
+      .select('is_revoked')
+      .eq('device_id', body.device_id)
+      .limit(1);
+    if (dev?.[0]?.is_revoked) {
+      await admin.from('audit_log').insert({
+        actor: user.id,
+        action: `admin_actions.revoked_device.${body.action}`,
+        entity: 'staff_devices',
+        entity_id: null,
+        after: { device_id: body.device_id },
+        source: body.source ?? 'desktop',
+        device_id: body.device_id,
+      });
+      return json({ error: 'device_revoked' }, 403);
+    }
+  }
+
   // Idempotency: reserve the key; replay returns the stored result.
   const { error: reserveErr } = await admin.from('outbox_receipts').insert({
     idempotency_key: body.idempotency_key,
@@ -114,7 +175,7 @@ Deno.serve(async (req) => {
     .eq('idempotency_key', body.idempotency_key);
 
   return json({ ok: true, result });
-});
+}
 
 async function handle(
   admin: SupabaseClient,
@@ -123,12 +184,21 @@ async function handle(
 ): Promise<Record<string, unknown>> {
   const p = body.payload ?? {};
   switch (body.action) {
+    case 'order_transition':
+      return orderTransition(
+        admin,
+        String(p.order_id),
+        p.from ? String(p.from) : null,
+        String(p.to),
+      );
     case 'refund':
       return refund(admin, String(p.order_id), p.amount ? Number(p.amount) : null, actorId);
     case 'role_change':
       return roleChange(admin, String(p.user_id), String(p.role));
     case 'device_revoke':
-      return deviceRevoke(admin, String(p.device_id));
+      return setDeviceRevoked(admin, String(p.device_id), true);
+    case 'device_restore':
+      return setDeviceRevoked(admin, String(p.device_id), false);
     case 'stock_adjust_large':
       return stockAdjust(
         admin,
@@ -143,6 +213,108 @@ async function handle(
       return staffInvite(admin, String(p.email), (p.role as Role) ?? 'staff');
     default:
       throw new Error(`unknown action: ${body.action}`);
+  }
+}
+
+// Customer emails on fulfilment milestones — same events/subjects as the storefront's
+// advanceOrderAction (apps/web/src/lib/orders/actions.ts), so an order gets exactly one
+// email per milestone whichever app moved it (notifications unique slot).
+const MILESTONE_EMAIL: Record<
+  string,
+  { event: string; subject: (n: string) => string; body: (n: string) => string }
+> = {
+  dispatched: {
+    event: 'dispatch',
+    subject: (n) => `Order ${n} is on its way`,
+    body: (n) => `<p>Order ${n} has been dispatched and is on its way to you.</p>`,
+  },
+  delivered: {
+    event: 'delivery',
+    subject: (n) => `Order ${n} delivered`,
+    body: (n) => `<p>Order ${n} was delivered. Enjoy — and keep this email for your warranty.</p>`,
+  },
+};
+
+/**
+ * Move an order one step. The database enforces which moves are legal (trigger
+ * orders_guard_status, migration 20261124000004); here we add the optimistic check —
+ * `from` is the status the staff member was looking at, so a change made meanwhile on
+ * the storefront (e.g. a refund) is never overwritten — then email the customer.
+ */
+async function orderTransition(
+  admin: SupabaseClient,
+  orderId: string,
+  from: string | null,
+  to: string,
+): Promise<Record<string, unknown>> {
+  let q = admin.from('orders').update({ status: to }).eq('id', orderId);
+  if (from) q = q.eq('status', from);
+  const { data, error } = await q.select('id, order_number, email');
+  if (error) {
+    const m = error.message.match(/(INVALID_TRANSITION|PAID_ORDER_NEEDS_REFUND)[^\n]*/);
+    throw new Error(m ? m[0] : error.message);
+  }
+  const order = data?.[0] as { id: string; order_number: string; email: string } | undefined;
+  if (!order) {
+    const { data: cur } = await admin.from('orders').select('status').eq('id', orderId).limit(1);
+    if (!cur?.[0]) throw new Error('order_not_found');
+    throw new Error(`STALE: order is now ${cur[0].status}, not ${from} — reload and try again`);
+  }
+
+  let emailed: string = 'none';
+  const milestone = MILESTONE_EMAIL[to];
+  if (milestone) emailed = await notifyOnce(admin, order, milestone);
+  return { orderId, from, to, emailed };
+}
+
+async function notifyOnce(
+  admin: SupabaseClient,
+  order: { id: string; order_number: string; email: string },
+  m: { event: string; subject: (n: string) => string; body: (n: string) => string },
+): Promise<string> {
+  // The unique (order_id, event, channel) row reserves the send; a duplicate means sent.
+  const { error: slotErr } = await admin
+    .from('notifications')
+    .insert({ order_id: order.id, event: m.event, channel: 'email' });
+  if (slotErr) return 'duplicate';
+
+  const release = () =>
+    admin
+      .from('notifications')
+      .delete()
+      .eq('order_id', order.id)
+      .eq('event', m.event)
+      .eq('channel', 'email');
+
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  const fromAddr = Deno.env.get('RESEND_FROM');
+  if (!apiKey || !fromAddr) {
+    await release(); // not configured: keep the slot free so a later retry can send
+    return 'skipped_not_configured';
+  }
+  const { data: sup } = await admin
+    .from('email_suppressions')
+    .select('email')
+    .eq('email', order.email.toLowerCase())
+    .limit(1);
+  if (sup?.length) return 'suppressed';
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: fromAddr,
+        to: order.email,
+        subject: m.subject(order.order_number),
+        html: m.body(order.order_number),
+      }),
+    });
+    if (!res.ok) throw new Error(`resend_${res.status}`);
+    return 'sent';
+  } catch {
+    await release(); // email failure never blocks the status change
+    return 'failed';
   }
 }
 
@@ -204,25 +376,15 @@ async function refund(
       .eq('order_id', orderId);
     for (const it of items ?? []) {
       if (!it.variant_id) continue;
-      const { data: v } = await admin
-        .from('product_variants')
-        .select('stock')
-        .eq('id', it.variant_id)
-        .limit(1);
-      const stock = v?.[0]?.stock ?? 0;
-      await admin
-        .from('product_variants')
-        .update({ stock: stock + it.qty })
-        .eq('id', it.variant_id);
-      await admin
-        .from('inventory_movements')
-        .insert({
-          variant_id: it.variant_id,
-          delta: it.qty,
-          reason: 'return',
-          order_id: orderId,
-          actor: actorId,
-        });
+      // Atomic: adjust_stock does the arithmetic in one UPDATE and logs the movement.
+      const { error } = await admin.rpc('adjust_stock', {
+        p_variant: it.variant_id,
+        p_delta: it.qty,
+        p_reason: 'return',
+        p_actor: actorId,
+        p_order: orderId,
+      });
+      if (error) throw new Error(`restock_failed: ${error.message}`);
     }
   }
   return { orderId, refundAmount, full };
@@ -239,16 +401,19 @@ async function roleChange(
   return { userId, role };
 }
 
-async function deviceRevoke(
+async function setDeviceRevoked(
   admin: SupabaseClient,
   deviceId: string,
+  revoked: boolean,
 ): Promise<Record<string, unknown>> {
-  const { error } = await admin
+  const { data, error } = await admin
     .from('staff_devices')
-    .update({ is_revoked: true })
-    .eq('device_id', deviceId);
+    .update({ is_revoked: revoked })
+    .eq('device_id', deviceId)
+    .select('device_id');
   if (error) throw new Error(error.message);
-  return { deviceId, revoked: true };
+  if (!data?.length) throw new Error('device_not_found');
+  return { deviceId, revoked };
 }
 
 async function stockAdjust(
@@ -259,20 +424,19 @@ async function stockAdjust(
   actorId: string,
 ): Promise<Record<string, unknown>> {
   if (!Number.isInteger(delta) || delta === 0) throw new Error('invalid_delta');
-  const { data: v } = await admin
-    .from('product_variants')
-    .select('stock')
-    .eq('id', variantId)
-    .limit(1);
-  const stock = v?.[0]?.stock;
-  if (stock === undefined) throw new Error('variant_not_found');
-  const next = stock + delta;
-  if (next < 0) throw new Error('would_go_negative');
-  await admin.from('product_variants').update({ stock: next }).eq('id', variantId);
-  await admin
-    .from('inventory_movements')
-    .insert({ variant_id: variantId, delta, reason, actor: actorId });
-  return { variantId, delta, stock: next };
+  // One atomic UPDATE in the database (migration 20261124000006) — a read-then-write here
+  // could overwrite a sale committed in between.
+  const { data, error } = await admin.rpc('adjust_stock', {
+    p_variant: variantId,
+    p_delta: delta,
+    p_reason: reason,
+    p_actor: actorId,
+  });
+  if (error) {
+    const m = error.message.match(/(WOULD_GO_BELOW_RESERVED|VARIANT_NOT_FOUND|INVALID_DELTA)/);
+    throw new Error(m ? m[0].toLowerCase() : error.message);
+  }
+  return { variantId, delta, stock: data as number };
 }
 
 async function couponCreate(

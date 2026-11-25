@@ -1,47 +1,39 @@
 import type { OrderStatus } from '@extramile/core';
+import { invokeAdminAction } from './adminActions';
 import { outboxMark, outboxPending, type OutboxItem } from './offline';
-import { supabase } from './supabase';
-import { deviceId } from './tauri';
+import { saveSerials } from './orders';
 
 /**
  * Replay one queued action. The server dedupes on the idempotency_key
  * (admin-actions → outbox_receipts), so re-sending after a mid-flush crash is safe.
  */
-async function replay(item: OutboxItem, device: string): Promise<void> {
+async function replay(item: OutboxItem): Promise<void> {
   switch (item.kind) {
     case 'order_transition': {
       if (!item.order_id) throw new Error('order_transition missing order_id');
-      const status = String(item.payload.status) as OrderStatus;
-      // Optimistic concurrency is enforced server-side via RLS/updated_at; a rejected
-      // transition surfaces here as an error and the item stays pending for a diff dialog.
-      const { error } = await supabase.from('orders').update({ status }).eq('id', item.order_id);
-      if (error) throw new Error(error.message);
+      const to = String(item.payload.status) as OrderStatus;
+      // Items queued before this change have no `from`; the server then only checks
+      // that the move is legal. A refusal (stale/illegal) keeps the item pending.
+      const from = item.payload.from ? (String(item.payload.from) as OrderStatus) : null;
+      await invokeAdminAction(
+        'order_transition',
+        { order_id: item.order_id, from, to },
+        item.idempotency_key,
+      );
       break;
     }
     case 'serial_capture': {
-      const { error } = await supabase
-        .from('order_items')
-        .update({ serials: item.payload.serials as string[] })
-        .eq('id', String(item.payload.order_item_id));
-      if (error) throw new Error(error.message);
+      await saveSerials(String(item.payload.order_item_id), item.payload.serials as string[]);
       break;
     }
     case 'stock_adjust': {
-      const { error } = await supabase.functions.invoke('admin-actions', {
-        body: {
-          action: 'stock_adjust_large',
-          payload: item.payload,
-          idempotency_key: item.idempotency_key,
-          device_id: device,
-          source: 'desktop',
-        },
-      });
-      if (error) throw new Error(error.message);
+      await invokeAdminAction('stock_adjust_large', item.payload, item.idempotency_key);
       break;
     }
     case 'walk_in_sale':
-      // Walk-in sync is completed with the walk-in flow in D5; no-op replay for now.
-      break;
+      // Walk-in sync arrives with the walk-in flow (D5). Until then keep the item pending —
+      // marking it synced would silently discard the sale.
+      throw new Error('Walk-in sales cannot sync yet — kept in the queue.');
   }
 }
 
@@ -54,14 +46,13 @@ export interface FlushReport {
 export async function runSync(): Promise<FlushReport> {
   const items = await outboxPending();
   const blockedOrders = new Set<string>();
-  const device = await deviceId();
   let synced = 0;
   let failed = 0;
 
   for (const item of items) {
     if (item.order_id && blockedOrders.has(item.order_id)) continue;
     try {
-      await replay(item, device);
+      await replay(item);
       await outboxMark(item.id, true);
       synced += 1;
     } catch (err) {

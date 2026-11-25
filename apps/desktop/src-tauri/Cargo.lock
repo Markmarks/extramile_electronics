@@ -815,7 +815,7 @@ dependencies = [
 
 [[package]]
 name = "extramile-admin"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "aes-gcm",
  "argon2",

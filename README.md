@@ -31,7 +31,7 @@ pnpm dev                                        # web on http://localhost:3000
 
 ### Requirements
 
-- Node ≥ 20 (see `.nvmrc`)
+- Node ≥ 22 (see `.nvmrc`; Playwright 1.65 needs 22+)
 - pnpm 9 (`corepack use pnpm@9` or `npm i -g pnpm`)
 - Docker + Supabase CLI for the local database (`supabase start`)
 - Rust toolchain (for `apps/desktop`, added in phase D1)
@@ -43,6 +43,9 @@ pnpm dev                                        # web on http://localhost:3000
 | `pnpm dev` | Run the web app |
 | `pnpm build` | Build all workspace packages |
 | `pnpm test` | Run unit/integration tests across packages |
+| `pnpm verify:preflight` | Fast env/deps/Supabase-reachability checks before E2E |
+| `pnpm e2e` | Playwright E2E for web + back-office (in Edge); `@backend` tests self-skip when Supabase is down |
+| `pnpm e2e:offline` | Only the E2E tests that need no backend |
 | `pnpm typecheck` | `tsc --noEmit` across packages |
 | `pnpm lint` | ESLint (max-warnings 0) |
 | `pnpm format` | Prettier write |

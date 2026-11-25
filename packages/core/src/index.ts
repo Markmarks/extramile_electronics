@@ -4,6 +4,8 @@ export * from './imei';
 export * from './pricing';
 export * from './order-number';
 export * from './order-state';
+export * from './condition';
+export * from './specs';
 export * from './schemas';
 export type {
   Database,

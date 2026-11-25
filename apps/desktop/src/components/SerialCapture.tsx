@@ -1,4 +1,5 @@
 import { isValidImei } from '@extramile/core';
+import { CheckCircle2, ScanLine } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 
 /**
@@ -38,16 +39,31 @@ export function SerialCapture({
   const done = serials.length >= count;
 
   return (
-    <div className="card" style={{ maxWidth: '28rem' }}>
-      <p className="muted">
-        Scan serial {Math.min(serials.length + 1, count)} of {count}
-      </p>
-      <form onSubmit={onSubmit}>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">
+          {done ? 'All captured' : `Unit ${serials.length + 1} of ${count}`}
+        </span>
+        <span className="font-medium tabular-nums">
+          {serials.length}/{count}
+        </span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
+        <div
+          className="h-full rounded-full bg-primary transition-all"
+          style={{ width: `${(serials.length / count) * 100}%` }}
+        />
+      </div>
+      <form onSubmit={onSubmit} className="relative">
+        <ScanLine
+          className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
         <input
-          className="input"
+          className={`input h-10 pl-8 font-mono ${error ? 'border-destructive' : ''}`}
           autoFocus
           disabled={done}
-          placeholder="Scan or type IMEI"
+          placeholder="Scan or type IMEI, then Enter"
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
@@ -55,13 +71,17 @@ export function SerialCapture({
           }}
         />
       </form>
-      {error && <p className="error">{error}</p>}
-      <ol className="muted" style={{ margin: 0, paddingLeft: '1.2rem' }}>
-        {serials.map((s) => (
-          <li key={s}>{s}</li>
-        ))}
-      </ol>
-      {done && <p style={{ color: 'hsl(var(--success))' }}>All {count} captured.</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      {serials.length > 0 && (
+        <ol className="space-y-1">
+          {serials.map((s, i) => (
+            <li key={s} className="flex items-center gap-2 font-mono text-xs">
+              <CheckCircle2 className="size-3.5 text-success" aria-hidden />
+              <span className="text-muted-foreground">{i + 1}.</span> {s}
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }

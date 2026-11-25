@@ -55,8 +55,24 @@ export async function advanceOrderAction(
     return { ok: false, error: `Cannot move ${order.status} → ${to}.` };
   }
 
-  const { error } = await admin.from('orders').update({ status: to }).eq('id', orderId);
-  if (error) return { ok: false, error: error.message };
+  // Only move it if it is still in the status we validated against — the back-office may
+  // have changed it meanwhile. The DB trigger (migration 20261124000004) re-checks the move.
+  const { data: moved, error } = await admin
+    .from('orders')
+    .update({ status: to })
+    .eq('id', orderId)
+    .eq('status', order.status)
+    .select('id')
+    .returns<{ id: string }[]>();
+  if (error) {
+    if (error.message.includes('PAID_ORDER_NEEDS_REFUND'))
+      return { ok: false, error: 'This order is paid — refund it instead of cancelling.' };
+    if (error.message.includes('INVALID_TRANSITION'))
+      return { ok: false, error: `Cannot move ${order.status} → ${to}.` };
+    return { ok: false, error: error.message };
+  }
+  if (!moved?.length)
+    return { ok: false, error: 'This order changed meanwhile — reload and try again.' };
 
   await admin.from('audit_log').insert({
     actor,

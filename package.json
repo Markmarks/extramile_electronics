@@ -11,6 +11,9 @@
     "build": "pnpm -r --filter=./packages/* --filter=./apps/* build",
     "dev": "pnpm --filter @extramile/web dev",
     "test": "pnpm -r test",
+    "e2e": "playwright test",
+    "e2e:offline": "playwright test --grep-invert @backend",
+    "verify:preflight": "node scripts/verify-preflight.mjs",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
@@ -19,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
+    "@playwright/test": "^1.65.1",
     "@types/node": "^22.10.7",
     "eslint": "^9.18.0",
     "husky": "^9.1.7",
@@ -34,5 +38,13 @@
       "eslint --max-warnings 0 --no-warn-ignored"
     ],
     "*.{json,md,css,yaml,yml}": "prettier --write"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss@<8.5.23": "^8.5.23",
+      "nanoid@<3.3.18": "^3.3.18",
+      "source-map-js@<1.2.2": "^1.2.2",
+      "sharp@<0.35.5": "^0.35.5"
+    }
   }
 }

@@ -1,12 +1,19 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Config } from 'tailwindcss';
 import tailwindcssAnimate from 'tailwindcss-animate';
+
+// Anchor content globs to this file's directory (forward slashes for fast-glob),
+// so class scanning works regardless of the process CWD the dev server is launched with.
+const here = path.dirname(fileURLToPath(import.meta.url));
+const glob = (p: string) => path.resolve(here, p).replace(/\\/g, '/');
 
 const config: Config = {
   darkMode: 'class',
   content: [
-    './src/**/*.{ts,tsx}',
+    glob('src/**/*.{ts,tsx}'),
     // Shared components live in packages/ui — scan them so their classes are emitted.
-    '../../packages/ui/src/**/*.{ts,tsx}',
+    glob('../../packages/ui/src/**/*.{ts,tsx}'),
   ],
   theme: {
     container: {

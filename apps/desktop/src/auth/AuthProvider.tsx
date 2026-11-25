@@ -9,7 +9,16 @@ import {
   type ReactNode,
 } from 'react';
 import { supabase } from '../lib/supabase';
-import { pinEnroll, pinLock, pinReset, pinStatus, pinUnlock, sessionReseal } from '../lib/tauri';
+import {
+  deviceDescription,
+  deviceId,
+  pinEnroll,
+  pinLock,
+  pinReset,
+  pinStatus,
+  pinUnlock,
+  sessionReseal,
+} from '../lib/tauri';
 
 type Role = 'customer' | 'staff' | 'admin' | null;
 
@@ -34,6 +43,8 @@ interface AuthState {
   lock: () => void;
   /** Forget this device — wipes the vault and returns to enrolment. */
   signOut: () => Promise<void>;
+  /** Change the signed-in user's password. Returns an error message, or null on success. */
+  updatePassword: (newPassword: string) => Promise<string | null>;
 }
 
 const Ctx = createContext<AuthState | null>(null);
@@ -52,16 +63,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Post-restore staff gate — the bound account must still be staff/admin (D-02).
   // Returns the role on success, or null (and signs the local session out) otherwise.
-  const gate = useCallback(async (u: User): Promise<Role> => {
+  const gate = useCallback(async (u: User): Promise<Role | 'revoked'> => {
     const { data } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', u.id)
       .returns<{ role: 'customer' | 'staff' | 'admin' }[]>();
     const r = data?.[0]?.role ?? null;
-    if (r === 'staff' || r === 'admin') return r;
-    await supabase.auth.signOut({ scope: 'local' });
-    return null;
+    if (r !== 'staff' && r !== 'admin') {
+      await supabase.auth.signOut({ scope: 'local' });
+      return null;
+    }
+    // Register this PC (or refresh last_seen) and learn whether an admin revoked it.
+    const d = deviceDescription();
+    const { data: revoked, error: regErr } = await supabase.rpc('register_staff_device', {
+      p_device_id: await deviceId(),
+      p_label: d.label,
+      p_os: d.os,
+      p_app_version: d.appVersion,
+    });
+    if (regErr) {
+      // Fail closed only on an explicit revocation; a registry hiccup shouldn't lock the
+      // counter out (admin-actions still refuses revoked devices server-side).
+      console.warn('device registration failed:', regErr.message);
+    } else if (revoked === true) {
+      await supabase.auth.signOut({ scope: 'local' });
+      await pinReset().catch(() => {});
+      return 'revoked';
+    }
+    return r;
   }, []);
 
   useEffect(() => {
@@ -93,6 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const r = await gate(data.user);
+      if (r === 'revoked') {
+        setError('This PC has been revoked by an admin. Ask an admin to restore it.');
+        return;
+      }
       if (!r) {
         setError('This account has no back-office access.');
         return;
@@ -137,6 +171,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const r = await gate(data.user);
+      if (r === 'revoked') {
+        setError('This PC has been revoked by an admin. Ask an admin to restore it.');
+        setPhase('enroll');
+        return;
+      }
       if (!r) {
         setError('This account no longer has back-office access.');
         await pinReset();
@@ -170,9 +209,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPhase('enroll');
   }, []);
 
+  const updatePassword = useCallback(async (newPassword: string): Promise<string | null> => {
+    const { error: e } = await supabase.auth.updateUser({ password: newPassword });
+    if (e) return e.message;
+    // If changing the password rotated the refresh token, keep the PIN vault in sync.
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.refresh_token) {
+      await sessionReseal(data.session.refresh_token).catch(() => {});
+    }
+    return null;
+  }, []);
+
   const value = useMemo<AuthState>(
-    () => ({ phase, user, role, error, enroll, unlock, lock, signOut }),
-    [phase, user, role, error, enroll, unlock, lock, signOut],
+    () => ({ phase, user, role, error, enroll, unlock, lock, signOut, updatePassword }),
+    [phase, user, role, error, enroll, unlock, lock, signOut, updatePassword],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

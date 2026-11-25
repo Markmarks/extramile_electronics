@@ -1,16 +1,26 @@
-import { cedisToPesewas, type Enums } from '@extramile/core';
+import {
+  cedisToPesewas,
+  PRODUCT_CONDITIONS,
+  type Json,
+  type ProductCondition,
+  type SpecValue,
+} from '@extramile/core';
 import { supabase } from './supabase';
 
 // Catalogue CRUD — the desktop is where full catalogue management lives
 // (web admin is read-only, docs/07 §2). All writes go straight to the tables and
 // are authorised by RLS `is_staff()`; no Edge Function is needed for these.
 
-export type Condition = Enums<'product_cond'>;
-export const CONDITIONS: Condition[] = ['new', 'open_box', 'refurbished'];
+export type Condition = ProductCondition;
+export const CONDITIONS: Condition[] = PRODUCT_CONDITIONS;
+
+export type Specs = Record<string, SpecValue>;
 
 export interface Category {
   id: string;
   name: string;
+  /** Expected spec keys + types for products in this category. */
+  spec_schema: Record<string, unknown>;
 }
 export interface Brand {
   id: string;
@@ -35,7 +45,10 @@ export interface ProductRow {
   id: string;
   title: string;
   is_active: boolean;
+  condition: Condition;
+  category_id: string | null;
   category: string | null;
+  specs: Specs;
   brand: string | null;
   variants: VariantRow[];
   images: ProductImage[];
@@ -59,10 +72,10 @@ function slugify(name: string): string {
 export async function listCategories(): Promise<Category[]> {
   const { data } = await supabase
     .from('categories')
-    .select('id, name')
+    .select('id, name, spec_schema')
     .order('name')
     .returns<Category[]>();
-  return data ?? [];
+  return (data ?? []).map((c) => ({ ...c, spec_schema: c.spec_schema ?? {} }));
 }
 
 export async function listBrands(): Promise<Brand[]> {
@@ -88,6 +101,9 @@ interface ProductJoin {
   id: string;
   title: string;
   is_active: boolean;
+  condition: Condition;
+  category_id: string | null;
+  specs: Specs | null;
   categories: { name: string } | null;
   brands: { name: string } | null;
   product_variants: VariantRow[];
@@ -98,7 +114,7 @@ export async function listProducts(): Promise<ProductRow[]> {
   const { data } = await supabase
     .from('products')
     .select(
-      'id, title, is_active, categories(name), brands(name), product_variants(id, sku, price, stock, is_active), product_images(id, storage_path, sort_order)',
+      'id, title, is_active, condition, category_id, specs, categories(name), brands(name), product_variants(id, sku, price, stock, is_active), product_images(id, storage_path, sort_order)',
     )
     .order('created_at', { ascending: false })
     .limit(200)
@@ -107,6 +123,9 @@ export async function listProducts(): Promise<ProductRow[]> {
     id: p.id,
     title: p.title,
     is_active: p.is_active,
+    condition: p.condition,
+    category_id: p.category_id,
+    specs: p.specs ?? {},
     category: p.categories?.name ?? null,
     brand: p.brands?.name ?? null,
     variants: p.product_variants ?? [],
@@ -152,6 +171,7 @@ export interface NewProduct {
   condition: Condition;
   warrantyMonths: number;
   isActive: boolean;
+  specs: Specs;
 }
 
 /** Create a product; returns the new id so a first variant can be attached. */
@@ -167,6 +187,7 @@ export async function createProduct(p: NewProduct): Promise<string> {
       condition: p.condition,
       warranty_months: p.warrantyMonths,
       is_active: p.isActive,
+      specs: p.specs as Json,
     })
     .select('id')
     .returns<{ id: string }[]>();
@@ -205,5 +226,19 @@ export async function updateVariant(
 
 export async function setProductActive(id: string, isActive: boolean): Promise<void> {
   const { error } = await supabase.from('products').update({ is_active: isActive }).eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export async function setProductCondition(id: string, condition: Condition): Promise<void> {
+  const { error } = await supabase.from('products').update({ condition }).eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+/** Replace a product's tech specs (empty values are dropped by the caller). */
+export async function updateProductSpecs(id: string, specs: Specs): Promise<void> {
+  const { error } = await supabase
+    .from('products')
+    .update({ specs: specs as Json })
+    .eq('id', id);
   if (error) throw new Error(error.message);
 }

@@ -42,3 +42,15 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# vercel
+.vercel
+
+# claude code (local, machine-specific — may contain secrets)
+.claude/settings.local.json
+
+# claude verify gate log (local)
+.claude/verify-gate.log
+
+# built back-office installers (copied from src-tauri/target)
+apps/desktop/installers/
