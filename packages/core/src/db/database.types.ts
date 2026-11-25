@@ -350,6 +350,7 @@ export interface Database {
           id: number;
           coupon_id: string;
           user_id: string | null;
+          email: string | null;
           order_id: string;
           created_at: string;
         };
@@ -357,10 +358,16 @@ export interface Database {
           id?: number;
           coupon_id: string;
           user_id?: string | null;
+          email?: string | null;
           order_id: string;
           created_at?: string;
         };
-        Update: { coupon_id?: string; user_id?: string | null; order_id?: string };
+        Update: {
+          coupon_id?: string;
+          user_id?: string | null;
+          email?: string | null;
+          order_id?: string;
+        };
         Relationships: [];
       };
       carts: {

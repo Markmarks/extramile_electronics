@@ -15,6 +15,11 @@ const ERROR_MAP: Record<string, { status: number; message: string }> = {
   },
   EMPTY_CART: { status: 400, message: 'Your cart is empty.' },
   INVALID_COUPON: { status: 400, message: 'That coupon is not valid.' },
+  COUPON_LIMIT_REACHED: {
+    status: 409,
+    message:
+      "You've already used this coupon as many times as it allows. Remove it to place your order.",
+  },
   INVALID_ZONE: { status: 400, message: 'Choose a valid delivery option.' },
 };
 
