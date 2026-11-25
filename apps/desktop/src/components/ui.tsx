@@ -37,6 +37,8 @@ const tones: Record<string, string> = {
   admin: 'bg-primary/10 text-primary',
   staff: 'bg-violet-500/10 text-violet-600',
   customer: 'bg-secondary text-muted-foreground',
+  active: 'bg-success/10 text-success',
+  revoked: 'bg-destructive/10 text-destructive',
 };
 
 /** Order / payment / role state as a small coloured label; unknown values fall back to grey. */

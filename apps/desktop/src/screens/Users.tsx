@@ -1,7 +1,17 @@
-import { Search, UserPlus, Users as UsersIcon } from 'lucide-react';
+import { Laptop, Search, UserPlus, Users as UsersIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { EmptyState, Notice, PageHeader, StatusBadge } from '../components/ui';
-import { changeRole, inviteStaff, listUsers, ROLES, type Role, type UserRow } from '../lib/users';
+import {
+  changeRole,
+  inviteStaff,
+  listDevices,
+  listUsers,
+  ROLES,
+  setDeviceRevoked,
+  type DeviceRow,
+  type Role,
+  type UserRow,
+} from '../lib/users';
 
 /** User management — admin only (role_change / staff_invite are admin-only server-side). */
 export function Users() {
@@ -11,8 +21,12 @@ export function Users() {
   const [roleFilter, setRoleFilter] = useState<Role | 'all'>('all');
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
+  const [devices, setDevices] = useState<DeviceRow[]>([]);
+
   const refresh = useCallback(async () => {
-    setUsers(await listUsers());
+    const [u, d] = await Promise.all([listUsers(), listDevices()]);
+    setUsers(u);
+    setDevices(d);
     setLoading(false);
   }, []);
 
@@ -144,7 +158,87 @@ export function Users() {
           </table>
         )}
       </section>
+
+      <DevicesPanel
+        devices={devices}
+        onToggle={(d) =>
+          report(
+            () => setDeviceRevoked(d.device_id, !d.is_revoked),
+            d.is_revoked
+              ? 'Device restored.'
+              : 'Device revoked — it is locked out at its next unlock.',
+          )()
+        }
+      />
     </div>
+  );
+}
+
+/** Back-office PCs that have signed in. Revoke a lost or stolen one. */
+function DevicesPanel({
+  devices,
+  onToggle,
+}: {
+  devices: DeviceRow[];
+  onToggle: (d: DeviceRow) => void;
+}) {
+  return (
+    <section className="card overflow-hidden" aria-label="Back-office devices">
+      <div className="card-header">
+        <div>
+          <h2 className="text-sm font-semibold">Back-office devices</h2>
+          <p className="text-xs text-muted-foreground">
+            Revoke a lost or stolen PC: privileged actions stop immediately and it is wiped at its
+            next unlock.
+          </p>
+        </div>
+      </div>
+      {devices.length === 0 ? (
+        <EmptyState icon={Laptop} title="No devices registered yet" />
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Device</th>
+              <th>Last user</th>
+              <th>Last seen</th>
+              <th>Status</th>
+              <th className="w-28" />
+            </tr>
+          </thead>
+          <tbody>
+            {devices.map((d) => (
+              <tr key={d.device_id}>
+                <td>
+                  <div className="leading-tight">
+                    <p>{d.label ?? 'Back-office'}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {d.os ?? '—'} · v{d.app_version ?? '?'} · {d.device_id.slice(0, 8)}
+                    </p>
+                  </div>
+                </td>
+                <td className="text-muted-foreground">{d.profiles?.full_name ?? '—'}</td>
+                <td className="text-muted-foreground">
+                  {new Date(d.last_seen_at).toLocaleString()}
+                </td>
+                <td>
+                  <StatusBadge value={d.is_revoked ? 'revoked' : 'active'} />
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className={d.is_revoked ? 'btn-secondary w-full' : 'btn-danger w-full'}
+                    onClick={() => onToggle(d)}
+                  >
+                    {d.is_revoked ? 'Restore' : 'Revoke'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }
 

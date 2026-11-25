@@ -43,11 +43,12 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Unit + integration tests (coverage gates)
-        run: pnpm -r test
-
+      # Build first: tests/security/bundle.test.ts scans the built .next output (S-11).
       - name: Build
         run: pnpm build
+
+      - name: Unit + integration tests (coverage gates)
+        run: pnpm -r test
 
       - name: Scan client bundle for leaked secrets (S-11)
         run: node scripts/scan-bundle-secrets.mjs apps/web/.next
@@ -59,7 +60,8 @@ jobs:
   # Enabled from phase P2 once supabase/migrations exist.
   database:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('supabase/migrations/*.sql') != '' }}
+    # (A job-level `if: hashFiles(...)` is invalid in GitHub Actions — hashFiles only
+    # works in step context — and made the whole workflow fail with zero jobs.)
     env:
       RUN_RLS: '1'
     steps:
@@ -82,8 +84,20 @@ jobs:
         run: supabase db lint
       - name: Install
         run: pnpm install --frozen-lockfile
+      # The workflow-level env points at a dummy project for `next build`; the RLS suite
+      # must hit the local stack started above, so pass its real URL/keys (local demo
+      # values printed by `supabase status`, not secrets) inline — inline wins over `env:`.
       - name: RLS suite (S-01..S-12)
-        run: pnpm --filter @extramile/web test:rls
+        run: |
+          eval "$(supabase status -o env)"
+          if [ -z "$API_URL" ] || [ -z "$ANON_KEY" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
+            echo "::error::supabase status -o env did not print API_URL / ANON_KEY / SERVICE_ROLE_KEY"
+            exit 1
+          fi
+          NEXT_PUBLIC_SUPABASE_URL="$API_URL" \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY" \
+          SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" \
+            pnpm --filter @extramile/web test:rls
 
   # ── E2E against a preview deploy (SDLC §3 step 7) ─────────────────────────────
   # Enabled from phase P3+. Requires a preview URL secret.

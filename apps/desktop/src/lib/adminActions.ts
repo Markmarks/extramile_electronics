@@ -44,6 +44,7 @@ async function serverMessage(error: { message: string; context?: unknown }): Pro
 
 function friendly(code: string): string {
   if (code === 'forbidden') return 'Your account is not allowed to do that.';
+  if (code === 'device_revoked') return 'This PC has been revoked by an admin.';
   if (code === 'unauthenticated') return 'Your session expired — unlock again.';
   if (code.startsWith('PAID_ORDER_NEEDS_REFUND'))
     return 'This order is paid — refund it instead of cancelling.';
