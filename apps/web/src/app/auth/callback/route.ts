@@ -4,6 +4,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import type { Database } from '@extramile/core';
 import { publicEnv } from '@/lib/env';
 import { sanitizeNext } from '@/lib/auth/next';
+import { claimGuestOrders } from '@/lib/account/claim';
 import { mergeGuestCart } from '@/lib/cart/merge';
 import { z } from 'zod';
 
@@ -52,6 +53,8 @@ export async function GET(req: NextRequest) {
       // Non-fatal: sign-in still succeeds; the cart merge can be retried later.
     }
   }
+
+  await claimGuestOrders(data.user); // non-fatal; never throws
 
   return NextResponse.redirect(new URL(next, url.origin));
 }

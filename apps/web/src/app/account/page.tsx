@@ -1,4 +1,4 @@
-import { ChevronRight, KeyRound, LogOut, Package } from 'lucide-react';
+import { ChevronRight, KeyRound, LogOut, Package, ShieldCheck } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
@@ -12,6 +12,7 @@ const rows = [
     icon: KeyRound,
     label: 'Connected accounts',
   },
+  { href: '/account/privacy', icon: ShieldCheck, label: 'Your data & privacy' },
 ];
 
 export default async function AccountPage() {

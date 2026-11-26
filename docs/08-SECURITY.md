@@ -62,6 +62,8 @@ guard (`scripts/security-guard.mjs`), `A-` dependency audit.
 | V-10 | Order-status endpoint abuse | Order number regex-validated; returns status enums only | G-06; phase 2 |
 | V-11 | Image optimiser used as an open proxy | `remotePatterns` pinned to our bucket | phase 2 e2e |
 | V-12 | Known-vulnerable dependency | `pnpm audit --audit-level=high` in CI, Dependabot | A-01 |
+| V-13 | Guest order lookup used to read someone else's order, or guest orders claimed by an account that doesn't own the email | `/track` needs order number **and** checkout email (compared server-side, one "not found" message, IP rate limit, progress only — no address/phone/payment ref); `claim_guest_orders` is service-role only and called solely from `/auth/callback` (inbox or provider-verified email), never on a password sign-in | `tests/db/customer-privacy.test.ts` |
+| V-14 | Data export / account deletion abused | Export reads only the session user's rows (RLS, no input); delete needs a session, a typed DELETE and a rate limit; `detach_customer` refuses staff/admin and is service-role only | `tests/db/customer-privacy.test.ts` |
 
 ### Back-office (`apps/desktop`)
 

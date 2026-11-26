@@ -18,7 +18,13 @@ import {
   listProducts,
   type Condition,
 } from '@/lib/catalog/queries';
-import { buildPageHref, flattenParams, parseSort, type RawSearchParams } from '@/lib/catalog/url';
+import {
+  buildPageHref,
+  flattenParams,
+  parseNumericFilters,
+  parseSort,
+  type RawSearchParams,
+} from '@/lib/catalog/url';
 
 export const revalidate = 300;
 
@@ -67,6 +73,7 @@ export default async function CategoryPage({
     brandId,
     condition: sp.condition as Condition | undefined,
     inStock: sp.in_stock === '1',
+    ...parseNumericFilters(sp),
     sort,
     page,
   };
@@ -87,7 +94,12 @@ export default async function CategoryPage({
       </div>
 
       <div className="grid gap-6 md:grid-cols-[260px_1fr] md:gap-8">
-        <Facets pathname={pathname} current={sp} brands={brands} />
+        <Facets
+          pathname={pathname}
+          current={sp}
+          brands={brands}
+          memory={'memoryFacets' in category && category.memoryFacets === true}
+        />
 
         <div className="space-y-6">
           <ProductGrid items={result.items} />
