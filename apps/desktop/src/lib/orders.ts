@@ -11,6 +11,8 @@ export interface OrderRow {
   total: number;
   email: string;
   created_at: string;
+  /** 'online' (storefront) or 'walk_in' (counter sale). */
+  channel: string;
 }
 
 export interface OrderItemRow {
@@ -58,7 +60,7 @@ export interface OrderDetail extends OrderRow {
   refundable: number;
 }
 
-const SELECT = 'id, order_number, status, payment_status, total, email, created_at';
+const SELECT = 'id, order_number, status, payment_status, total, email, created_at, channel';
 const DETAIL_SELECT = `${SELECT}, phone, ship_to, subtotal, shipping_fee, discount, coupon_code, notes, shipping_zones(name, eta_days_min, eta_days_max)`;
 
 interface DetailJoin extends OrderRow {
@@ -163,6 +165,49 @@ export function formatAddress(s: ShipTo): string[] {
 
 function key(): string {
   return globalThis.crypto.randomUUID();
+}
+
+/** Who/what last changed an order — shown when a transition is refused as stale (D-06). */
+export interface OrderChange {
+  status: string;
+  updatedAt: string;
+  by: string | null;
+  source: string | null;
+}
+
+export async function getLastChange(orderId: string): Promise<OrderChange | null> {
+  const [{ data: rows }, { data: logs }] = await Promise.all([
+    supabase
+      .from('orders')
+      .select('status, updated_at')
+      .eq('id', orderId)
+      .limit(1)
+      .returns<{ status: string; updated_at: string }[]>(),
+    // Staff can read audit_log (migration 20261126000003). Web and desktop transitions both
+    // go through admin-actions, which logs the order id in `after`.
+    supabase
+      .from('audit_log')
+      .select('actor, source, created_at')
+      .in('action', ['admin_actions.order_transition', 'admin_actions.refund'])
+      .contains('after', { orderId })
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .returns<{ actor: string | null; source: string | null; created_at: string }[]>(),
+  ]);
+  const order = rows?.[0];
+  if (!order) return null;
+  const log = logs?.[0];
+  let by: string | null = null;
+  if (log?.actor) {
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', log.actor)
+      .limit(1)
+      .returns<{ full_name: string | null }[]>();
+    by = p?.[0]?.full_name ?? 'another staff member';
+  }
+  return { status: order.status, updatedAt: order.updated_at, by, source: log?.source ?? null };
 }
 
 /**

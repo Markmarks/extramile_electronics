@@ -15,6 +15,7 @@ use std::sync::Mutex;
 use tauri::Manager;
 use uuid::Uuid;
 
+mod exports;
 mod offline;
 mod printing;
 
@@ -261,7 +262,10 @@ pub fn run() {
             printing::list_printers,
             printing::print_receipt,
             printing::print_label,
-            printing::print_test
+            printing::print_packing_slip,
+            printing::print_warranty_card,
+            printing::print_test,
+            exports::write_export
         ])
         .run(tauri::generate_context!())
         .expect("error while running the ExtraMile back-office");

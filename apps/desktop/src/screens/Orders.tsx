@@ -3,12 +3,14 @@ import {
   Check,
   Inbox,
   MapPin,
+  Package,
   Phone,
   Printer,
   RefreshCw,
   RotateCcw,
   ScanLine,
   Search,
+  ShieldCheck,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -20,16 +22,19 @@ import { useConnectivity } from '../hooks/useConnectivity';
 import {
   captureSerials,
   formatAddress,
+  getLastChange,
   getOrderDetail,
   listOpenOrders,
   refundOrder,
   searchOrders,
   transitionOrder,
+  type OrderChange,
   type OrderDetail,
   type OrderRow,
 } from '../lib/orders';
 import { isPreview } from '../lib/preview';
-import { printReceipt, type ReceiptDto } from '../lib/print';
+import { printPackingSlip, printReceipt, printWarrantyCard } from '../lib/print';
+import { buildReceipt } from '../lib/receipt';
 
 const NEXT: Record<string, OrderStatus | null> = {
   confirmed: 'packed',
@@ -68,6 +73,7 @@ export function Orders() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'error' | 'info'; text: string } | null>(
     null,
   );
+  const [conflict, setConflict] = useState<OrderChange | null>(null);
 
   const visible = useMemo(
     () => found ?? (filter === 'all' ? orders : orders.filter((o) => o.status === filter)),
@@ -100,9 +106,13 @@ export function Orders() {
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
+    if (e.target instanceof HTMLInputElement) return; // typing in the search box
     const i = visible.findIndex((o) => o.id === selectedId);
     if (e.key === 'j' && visible[i + 1]) void open(visible[i + 1].id);
     else if (e.key === 'k' && i > 0 && visible[i - 1]) void open(visible[i - 1].id);
+    // docs/07 §4: p = pack, d = dispatch — only when that is the order's next step.
+    else if (e.key === 'p' && detail && NEXT[detail.status] === 'packed') void advance();
+    else if (e.key === 'd' && detail && NEXT[detail.status] === 'dispatched') void advance();
   }
 
   async function advance() {
@@ -119,7 +129,10 @@ export function Orders() {
       );
       await refresh();
     } catch (err) {
-      setMessage({ tone: 'error', text: err instanceof Error ? err.message : 'Failed.' });
+      const text = err instanceof Error ? err.message : 'Failed.';
+      setMessage({ tone: 'error', text });
+      // Refused because someone else moved it first: show who/when instead of guessing.
+      if (text.startsWith('Changed elsewhere')) await explainConflict();
     }
   }
 
@@ -142,36 +155,61 @@ export function Orders() {
     }
   }
 
-  async function print() {
-    if (!detail) return;
-    // Thermal receipt in the brand voice (docs/brand §08). ESC/POS prints each line feed as
-    // a new line, so the footer carries serials and warranty per item.
-    const footer = [
-      ...detail.items.flatMap((i) => [
-        ...(i.serials.length ? [`${i.sku} IMEI/Serial ${i.serials.join(', ')}`] : []),
-        ...(i.warranty_months > 0 ? [`${i.sku} ${i.warranty_months}-month warranty`] : []),
-      ]),
-      '',
-      'Keep this receipt. It is your warranty record.',
-      'ExtraMile Electronics, Accra',
-    ].join('\n');
-    const dto: ReceiptDto = {
-      header: 'extramile',
-      order_number: detail.order_number,
-      lines: detail.items.map((i) => ({
-        name: i.title,
-        qty: i.qty,
-        line_total: formatGHS(i.line_total),
-      })),
-      total: formatGHS(detail.total),
-      warranty: footer,
-    };
+  /** A failed print never changes order state; the buttons stay available to reprint. */
+  async function runPrint(what: string, job: () => Promise<string>) {
+    setMessage(null);
     try {
-      const path = await printReceipt(dto, 'Spool file (default)');
-      setMessage({ tone: 'ok', text: `Receipt spooled: ${path}` });
+      const where = await job();
+      setMessage({ tone: 'ok', text: `${what}: ${where}` });
     } catch (err) {
-      setMessage({ tone: 'error', text: err instanceof Error ? err.message : 'Print failed.' });
+      setMessage({
+        tone: 'error',
+        text: `${what} failed — ${err instanceof Error ? err.message : String(err)}`,
+      });
     }
+  }
+
+  function print() {
+    if (!detail) return;
+    void runPrint('Receipt', () => printReceipt(buildReceipt(detail)));
+  }
+
+  function printSlip() {
+    if (!detail) return;
+    void runPrint('Packing slip', () =>
+      printPackingSlip({
+        order_number: detail.order_number,
+        ship_to: formatAddress(detail.ship_to),
+        phone: detail.ship_to.phone ?? detail.phone,
+        lines: detail.items.map((i) => ({
+          name: i.title,
+          sku: i.sku,
+          qty: i.qty,
+          serials: i.serials,
+        })),
+        notes: detail.notes,
+      }),
+    );
+  }
+
+  function printWarranty() {
+    if (!detail) return;
+    void runPrint('Warranty card', () =>
+      printWarrantyCard({
+        order_number: detail.order_number,
+        purchased: new Date(detail.created_at).toLocaleDateString(),
+        customer: detail.ship_to.recipient ?? null,
+        items: detail.items
+          .filter((i) => i.warranty_months > 0)
+          .map((i) => ({ name: i.title, serials: i.serials, months: i.warranty_months })),
+        footer: 'Bring this card and the device for any warranty claim.',
+      }),
+    );
+  }
+
+  async function explainConflict() {
+    if (!detail) return;
+    setConflict(await getLastChange(detail.id).catch(() => null));
   }
 
   async function doRefund(amount: number | null, reason: string, restock: boolean) {
@@ -469,13 +507,19 @@ export function Orders() {
                       <Check className="size-4" aria-hidden /> Mark {next}
                     </button>
                   )}
-                  <button
-                    type="button"
-                    className="btn-secondary btn-lg"
-                    onClick={() => void print()}
-                  >
-                    <Printer className="size-4" aria-hidden /> Print receipt
+                  <button type="button" className="btn-secondary btn-lg" onClick={print}>
+                    <Printer className="size-4" aria-hidden /> Receipt
                   </button>
+                  {detail.channel !== 'walk_in' && (
+                    <button type="button" className="btn-secondary btn-lg" onClick={printSlip}>
+                      <Package className="size-4" aria-hidden /> Packing slip
+                    </button>
+                  )}
+                  {detail.items.some((i) => i.warranty_months > 0) && (
+                    <button type="button" className="btn-secondary btn-lg" onClick={printWarranty}>
+                      <ShieldCheck className="size-4" aria-hidden /> Warranty card
+                    </button>
+                  )}
                   {canRefund && (
                     <button
                       type="button"
@@ -494,6 +538,47 @@ export function Orders() {
           )}
         </section>
       </div>
+
+      {conflict && detail && (
+        <Modal title="This order changed elsewhere" onClose={() => setConflict(null)}>
+          <div className="space-y-3">
+            <p>
+              Your change wasn&apos;t saved, so nothing was overwritten. {detail.order_number} is
+              now <StatusBadge value={conflict.status} />
+              {conflict.by ? (
+                <>
+                  {' '}
+                  — changed by <strong>{conflict.by}</strong>
+                  {conflict.source ? ` (${conflict.source})` : ''}
+                </>
+              ) : null}{' '}
+              at {new Date(conflict.updatedAt).toLocaleString()}.
+            </p>
+            <div className="grid grid-cols-2 gap-2 text-[13px]">
+              <div className="rounded-lg bg-secondary p-3">
+                <p className="text-muted-foreground">On your screen</p>
+                <StatusBadge value={detail.status} />
+              </div>
+              <div className="rounded-lg bg-primary/5 p-3">
+                <p className="text-muted-foreground">Now</p>
+                <StatusBadge value={conflict.status} />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  setConflict(null);
+                  void refresh();
+                }}
+              >
+                <RefreshCw className="size-3.5" aria-hidden /> Reload order
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {refunding && detail && (
         <Modal title={`Refund ${detail.order_number}`} onClose={() => setRefunding(false)}>

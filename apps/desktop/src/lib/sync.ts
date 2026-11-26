@@ -2,6 +2,7 @@ import type { OrderStatus } from '@extramile/core';
 import { invokeAdminAction } from './adminActions';
 import { outboxMark, outboxPending, type OutboxItem } from './offline';
 import { saveSerials } from './orders';
+import { rememberSyncedSale } from './walkIn';
 
 /**
  * Replay one queued action. The server dedupes on the idempotency_key
@@ -30,10 +31,26 @@ async function replay(item: OutboxItem): Promise<void> {
       await invokeAdminAction('stock_adjust_large', item.payload, item.idempotency_key);
       break;
     }
-    case 'walk_in_sale':
-      // Walk-in sync arrives with the walk-in flow (D5). Until then keep the item pending —
-      // marking it synced would silently discard the sale.
-      throw new Error('Walk-in sales cannot sync yet — kept in the queue.');
+    case 'walk_in_sale': {
+      // Same idempotency key as when it was queued: a replay after a dropped response
+      // returns the stored result instead of selling twice. A refusal (e.g. stock sold
+      // online meanwhile) throws, so the sale stays queued with the error for staff to see.
+      const r = await invokeAdminAction<{ orderId?: string; orderNumber?: string }>(
+        'walk_in_sale',
+        item.payload,
+        item.idempotency_key,
+      );
+      const localRef = String(item.payload.local_ref ?? '');
+      if (localRef && r.orderNumber && r.orderId) {
+        rememberSyncedSale({
+          localRef,
+          orderNumber: r.orderNumber,
+          orderId: r.orderId,
+          at: new Date().toISOString(),
+        });
+      }
+      break;
+    }
   }
 }
 

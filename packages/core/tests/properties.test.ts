@@ -9,6 +9,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { isValidImei, luhnValid } from '../src/imei';
+import { parseCedisText, parseCsv, toCsv } from '../src/csv';
 import { cedisToPesewas, formatGHS, lineTotal, pesewasToCedis } from '../src/money';
 import { InvalidMsisdnError, isValidMsisdn, normalizeMsisdn } from '../src/msisdn';
 import { generateOrderNumber, ORDER_NUMBER_RE } from '../src/order-number';
@@ -382,5 +383,57 @@ describe('order-state properties', () => {
     const chain: OrderStatus[] = ['pending', ...STAFF_FULFILMENT_FLOW];
     for (let i = 1; i < chain.length; i++)
       expect(canTransition(chain[i - 1]!, chain[i]!)).toBe(true);
+  });
+});
+
+// ── CSV (back-office export / import) ─────────────────────────────────────────
+describe('csv properties', () => {
+  /** Any text cell that isn't formula-like (those are deliberately prefixed on export). */
+  const cell = fc
+    .string({ unit: 'grapheme', maxLength: 30 })
+    .filter((s) => !/^[=+\-@\t\r]/.test(s));
+  const row = fc
+    .array(cell, { minLength: 1, maxLength: 8 })
+    .filter((r) => !(r.length === 1 && r[0] === ''));
+
+  it('parseCsv(toCsv(rows)) returns the same rows — commas, quotes and newlines included', () => {
+    fc.assert(
+      fc.property(fc.array(row, { maxLength: 20 }), (rows) => {
+        expect(parseCsv(toCsv(rows))).toEqual(rows);
+      }),
+    );
+  });
+
+  it('formula-like text is exported as inert text (CSV injection)', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom('=', '+', '-', '@'),
+        fc.string({ maxLength: 20 }),
+        (lead, rest) => {
+          const [[out]] = parseCsv(toCsv([[lead + rest]])) as [[string]];
+          expect(out.startsWith(`'${lead}`)).toBe(true);
+        },
+      ),
+    );
+  });
+
+  it('parseCedisText reads back every amount the back-office formats', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 100_000_000_000 }), (p) => {
+        expect(parseCedisText(formatGHS(p))).toBe(p);
+        expect(parseCedisText((p / 100).toFixed(2))).toBe(p);
+      }),
+    );
+  });
+
+  it('parseCedisText only ever yields a non-negative safe integer, or null', () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 20 }), (s) => {
+        const p = parseCedisText(s);
+        return p === null || (Number.isSafeInteger(p) && p >= 0);
+      }),
+    );
+    for (const bad of ['-5', '1.234', '1e3', '', 'abc', '12.', '.5', 'NaN'])
+      expect(parseCedisText(bad)).toBeNull();
   });
 });

@@ -16,6 +16,8 @@ export default defineConfig({
   clearScreen: false,
   envPrefix: ['VITE_'],
   define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(version) },
-  server: { port: 1420, strictPort: true },
+  // Don't watch the Rust side: `cargo build/test` rewrites src-tauri/target while the dev
+  // server runs, and on Windows a locked .exe there crashes the watcher (EBUSY).
+  server: { port: 1420, strictPort: true, watch: { ignored: ['**/src-tauri/**'] } },
   build: { target: 'es2022', outDir: 'dist', emptyOutDir: true },
 });

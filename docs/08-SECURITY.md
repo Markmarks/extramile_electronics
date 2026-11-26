@@ -77,6 +77,8 @@ guard (`scripts/security-guard.mjs`), `A-` dependency audit.
 | D-06 | Webview writes the offline DB through `cache_query` | SELECT/WITH prefix, single statement, **and** `sqlite3_stmt_readonly` | `cargo test` `offline::tests::*` |
 | D-07 | Offline outbox replays a forbidden write | `ALLOWED_KINDS` in Rust + UI; server dedupes on idempotency key | phase 2 |
 | D-08 | Known-vulnerable crate (SQLite, url, …) | `cargo audit` in CI | A-02 |
+| D-10 | Webview writes files outside the app's folders via print/export names | Names sanitised in Rust (`safe_name`, `export_file_name`); folder chosen by Rust; extension allowlist | `cargo test` `printing::tests::spool_names_*`, `exports::tests::*` |
+| D-11 | Counter sale with a tampered price, or one that oversells | App sends only variant ids, qty, serials; `create_walk_in_order` prices from the DB and checks stock − reserved under row locks; service-role only via `admin-actions` | `tests/db/backoffice-operations.test.ts`, `walkIn.test.ts` |
 | D-09 | Malicious update | Minisign-signed updater, Authenticode, draft releases | release checklist (docs/07 §10) |
 
 ### Static guard (`node scripts/security-guard.mjs`, `--list` prints them)
@@ -111,9 +113,12 @@ means adding a row: what it accepts, and why a hostile script calling it can't d
 | `outbox_pending` | — | Reads the local queue. |
 | `outbox_mark` | id, ok, error | Local bookkeeping; the server dedupes on the idempotency key. |
 | `list_printers` | — | Printer names only. |
-| `print_receipt` | receipt DTO, printer | Typed DTO, rendered by us; phase 2: fuzz the DTO fields. |
-| `print_label` | label fields, printer | As above. |
+| `print_receipt` | receipt DTO, printer | Typed DTO rendered by us; control characters stripped so text can't inject ESC/POS commands; spool file name reduced to `[A-Za-z0-9_-]` (D-10). Printer must be one Windows lists. |
+| `print_packing_slip` | slip DTO, printer | As `print_receipt`. |
+| `print_warranty_card` | warranty DTO, printer | As `print_receipt`. |
+| `print_label` | label fields, printer | As `print_receipt`; copies clamped to 1–20, barcode data to printable ASCII. |
 | `print_test` | printer | Fixed content. |
+| `write_export` | base name, extension, text | Folder fixed (Documents\ExtraMile Exports); name reduced to `[A-Za-z0-9_-]`; extension must be csv/txt; 20 MB cap (D-10). |
 
 ## 6. Cadence
 
@@ -138,6 +143,7 @@ Phase 1 (2026-11-25), all fixed in the same change with a regression test or che
 | D-02 | Low | Production CSP allowed `http://localhost:3001` | Moved to `devCsp` |
 | V-04 | Low | `quoteAction`, `advanceOrderAction`, `/api/orders/[n]/status` and the OAuth callback didn't Zod-parse input | Zod schemas; G-05/G-06 keep it that way |
 | A-01 | High/critical (dev tooling only) | vitest/tinypool RCE when the UI server runs, vite dev-server file check, brace-expansion/js-yaml DoS | vitest 4.1, vite 6.4.6, pnpm overrides |
+| D-10 | Medium (needs script in the webview) | Print spool file names were built from the SKU / order number unsanitised, so `../` in a name could write a file outside the prints folder (found 2026-11-26) | `safe_name` in Rust + `cargo test`; same rule for the new `write_export` |
 | A-02 | Medium | Bundled SQLite CVE (libsqlite3-sys), `url` stack overflow, `cookie` nonce reuse | rusqlite 0.43, `url` 2.5.9, `cookie` 0.18.3 |
 
 Open: hardening owned by phase 2. This repo is public, so open findings with a real
