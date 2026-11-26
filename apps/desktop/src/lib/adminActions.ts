@@ -32,7 +32,7 @@ export async function invokeAdminAction<T = Record<string, unknown>>(
   return (body?.result ?? ({} as T)) as T;
 }
 
-const STOCK_ACTIONS = new Set(['stock_adjust_large', 'refund']);
+const STOCK_ACTIONS = new Set(['stock_adjust_large', 'stock_receive', 'walk_in_sale', 'refund']);
 
 /** supabase-js only says "non-2xx status code"; the function's JSON says why. */
 async function serverMessage(error: { message: string; context?: unknown }): Promise<string> {
@@ -60,6 +60,14 @@ function friendly(code: string): string {
   if (code === 'would_go_below_reserved')
     return 'Not saved — that is fewer than the units held for unpaid orders.';
   if (code === 'variant_not_found') return 'That variant no longer exists — reload.';
+  if (code === 'invalid_qty') return 'Enter a whole number of units (at least 1).';
+  if (code === 'invalid_cost') return 'Enter a unit cost of GH₵ 0.00 or more.';
+  if (code === 'insufficient_stock')
+    return 'Not enough free stock — some units may be held for unpaid online orders.';
+  if (code === 'empty_sale') return 'Add at least one item to the sale.';
+  if (code === 'invalid_method') return 'Choose cash or MoMo.';
+  if (code === 'manual_payment_refund_in_store')
+    return 'This was paid at the counter, not through Paystack — refund the customer in store.';
   // refunds
   if (code === 'already_refunded') return 'This order has already been refunded in full.';
   if (code === 'invalid_amount') return 'Enter an amount above GH₵ 0.00.';

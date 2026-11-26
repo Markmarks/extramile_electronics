@@ -222,6 +222,10 @@ async function handle(
         String(p.reason ?? 'adjust'),
         actorId,
       );
+    case 'stock_receive':
+      return stockReceive(admin, p, actorId);
+    case 'walk_in_sale':
+      return walkInSale(admin, p, actorId);
     case 'coupon_create_high_value':
       return couponCreate(admin, p);
     case 'staff_invite':
@@ -351,12 +355,15 @@ async function refund(
 
   const { data: payments } = await admin
     .from('payments')
-    .select('id, reference')
+    .select('id, reference, provider')
     .eq('order_id', orderId)
     .eq('status', 'paid')
     .limit(1);
   const payment = payments?.[0];
   if (!payment) throw new Error('no_paid_payment');
+  // A walk-in sale was paid in cash / MoMo at the counter, not through Paystack: there is
+  // no Paystack transaction to refund, so never call Paystack with its reference.
+  if (payment.provider === 'manual') throw new Error('manual_payment_refund_in_store');
 
   // What has already gone back to the customer: a refund may never exceed what is left,
   // and two partial refunds that add up to the total count as a full refund.
@@ -467,6 +474,93 @@ async function stockAdjust(
     throw new Error(m ? m[0].toLowerCase() : error.message);
   }
   return { variantId, delta, stock: data as number };
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Goods in from a supplier: +qty with unit cost (pesewas) and supplier on the movement. */
+async function stockReceive(
+  admin: SupabaseClient,
+  p: Record<string, unknown>,
+  actorId: string,
+): Promise<Record<string, unknown>> {
+  const variantId = String(p.variant_id ?? '');
+  const qty = Number(p.qty);
+  const cost = p.unit_cost === null || p.unit_cost === undefined ? null : Number(p.unit_cost);
+  const supplier = typeof p.supplier === 'string' ? p.supplier.slice(0, 120) : null;
+  if (!UUID_RE.test(variantId)) throw new Error('variant_not_found');
+  if (!Number.isInteger(qty) || qty < 1 || qty > 10000) throw new Error('invalid_qty');
+  if (cost !== null && (!Number.isSafeInteger(cost) || cost < 0)) throw new Error('invalid_cost');
+
+  const { data, error } = await admin.rpc('receive_stock', {
+    p_variant: variantId,
+    p_qty: qty,
+    p_unit_cost: cost,
+    p_supplier: supplier,
+    p_actor: actorId,
+  });
+  if (error) {
+    const m = error.message.match(/(VARIANT_NOT_FOUND|INVALID_QTY|INVALID_COST)/);
+    throw new Error(m ? m[0].toLowerCase() : error.message);
+  }
+  return { variantId, qty, unitCost: cost, stock: data as number };
+}
+
+/**
+ * In-store sale paid at the counter. Only variant ids, quantities and serials come from the
+ * app — prices, totals and stock checks happen in create_walk_in_order(). The outbox
+ * replays this with the same idempotency key, so an offline sale is recorded once.
+ */
+async function walkInSale(
+  admin: SupabaseClient,
+  p: Record<string, unknown>,
+  actorId: string,
+): Promise<Record<string, unknown>> {
+  const method = String(p.method ?? '');
+  if (method !== 'cash' && method !== 'momo') throw new Error('invalid_method');
+  if (!Array.isArray(p.items) || p.items.length === 0 || p.items.length > 50) {
+    throw new Error('empty_sale');
+  }
+  const items = p.items.map((raw) => {
+    const it = (raw ?? {}) as Record<string, unknown>;
+    const variantId = String(it.variant_id ?? '');
+    const qty = Number(it.qty);
+    if (!UUID_RE.test(variantId)) throw new Error('variant_not_found');
+    if (!Number.isInteger(qty) || qty < 1 || qty > 100) throw new Error('invalid_qty');
+    const serials = Array.isArray(it.serials)
+      ? it.serials
+          .filter((s): s is string => typeof s === 'string')
+          .map((s) => s.trim().slice(0, 40))
+          .filter(Boolean)
+          .slice(0, 100)
+      : [];
+    return { variant_id: variantId, qty, serials };
+  });
+  const text = (v: unknown, max: number) =>
+    typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null;
+
+  const { data, error } = await admin.rpc('create_walk_in_order', {
+    p_items: items,
+    p_method: method,
+    p_email: text(p.email, 254),
+    p_phone: text(p.phone, 20),
+    p_customer: text(p.customer, 120),
+    p_actor: actorId,
+  });
+  if (error) {
+    const m = error.message.match(
+      /(INSUFFICIENT_STOCK|VARIANT_NOT_FOUND|INVALID_QTY|INVALID_METHOD|EMPTY_SALE|TOO_MANY_LINES)/,
+    );
+    throw new Error(m ? m[0].toLowerCase() : error.message);
+  }
+  const order = data as { id: string; order_number: string; total: number };
+  return {
+    orderId: order.id,
+    orderNumber: order.order_number,
+    total: order.total,
+    method,
+    localRef: text(p.local_ref, 40),
+  };
 }
 
 async function couponCreate(

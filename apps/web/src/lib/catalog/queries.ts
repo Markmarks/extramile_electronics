@@ -78,6 +78,9 @@ export interface ListParams {
   inStock?: boolean;
   minPrice?: number;
   maxPrice?: number;
+  /** Minimum storage / RAM in GB, read from the product's specs (storage_gb / ram_gb). */
+  minStorageGb?: number;
+  minRamGb?: number;
   sort?: SortKey;
   page?: number;
   pageSize?: number;
@@ -217,16 +220,25 @@ export async function getCategoryTree(): Promise<CategoryNode[]> {
 
 export async function getCategoryBySlug(
   slug: string,
-): Promise<{ id: string; name: string; slug: string } | null> {
+): Promise<{ id: string; name: string; slug: string; memoryFacets?: boolean } | null> {
   const supabase = createPublicClient();
   const { data } = await supabase
     .from('categories')
-    .select('id, name, slug')
+    .select('id, name, slug, spec_schema')
     .eq('slug', slug)
     .eq('is_active', true)
     .limit(1)
-    .returns<{ id: string; name: string; slug: string }[]>();
-  return data?.[0] ?? null;
+    .returns<{ id: string; name: string; slug: string; spec_schema: unknown }[]>();
+  const row = data?.[0];
+  if (!row) return null;
+  const schema = asRecord(row.spec_schema);
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    // Storage/RAM filters only make sense where the category's specs carry them.
+    memoryFacets: 'storage_gb' in schema || 'ram_gb' in schema,
+  };
 }
 
 export async function getActiveBrands(): Promise<Brand[]> {
@@ -255,6 +267,8 @@ export async function listProducts(params: ListParams): Promise<ListResult> {
     p_sort: params.sort ?? 'relevance',
     p_limit: pageSize + 1, // +1 to detect another page
     p_offset: (page - 1) * pageSize,
+    p_min_storage_gb: params.minStorageGb,
+    p_min_ram_gb: params.minRamGb,
   });
 
   const rows = (data ?? []) as Tables<'products'>[];

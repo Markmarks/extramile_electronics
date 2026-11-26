@@ -14,6 +14,8 @@
     "e2e": "playwright test",
     "e2e:offline": "playwright test --grep-invert @backend",
     "verify:preflight": "node scripts/verify-preflight.mjs",
+    "security": "node scripts/security-guard.mjs && node --test scripts/security-guard.test.mjs",
+    "security:audit": "pnpm audit --audit-level=high && cd apps/desktop/src-tauri && cargo audit",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
@@ -44,7 +46,11 @@
       "postcss@<8.5.23": "^8.5.23",
       "nanoid@<3.3.18": "^3.3.18",
       "source-map-js@<1.2.2": "^1.2.2",
-      "sharp@<0.35.5": "^0.35.5"
+      "sharp@<0.35.5": "^0.35.5",
+      "brace-expansion@<1.1.20": "^1.1.22",
+      "brace-expansion@>=5.0.0 <5.0.11": "^5.0.11",
+      "js-yaml@>=4.0.0 <4.3.2": "^4.3.2",
+      "vite@>=6.0.0 <6.4.4": "^6.4.6"
     }
   }
 }

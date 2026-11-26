@@ -3,6 +3,7 @@ import './globals.css';
 
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Inter, JetBrains_Mono } from 'next/font/google';
+import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { themeBootScript } from '@/lib/theme';
 
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-dvh flex-col">
         <SiteHeader />
         <div className="flex-1">{children}</div>
+        <SiteFooter />
       </body>
     </html>
   );

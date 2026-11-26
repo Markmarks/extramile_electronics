@@ -7,7 +7,13 @@ import { ProductGrid } from '@/components/catalog/product-grid';
 import { SortSelect } from '@/components/catalog/sort-select';
 import { demoBrands, demoCatalogEnabled, demoListProducts } from '@/lib/catalog/demo';
 import { getActiveBrands, listProducts, type Condition } from '@/lib/catalog/queries';
-import { buildPageHref, flattenParams, parseSort, type RawSearchParams } from '@/lib/catalog/url';
+import {
+  buildPageHref,
+  flattenParams,
+  parseNumericFilters,
+  parseSort,
+  type RawSearchParams,
+} from '@/lib/catalog/url';
 
 export const metadata: Metadata = { title: 'Search' };
 
@@ -38,6 +44,7 @@ export default async function SearchPage({
         brandId,
         condition: sp.condition as Condition | undefined,
         inStock: sp.in_stock === '1',
+        ...parseNumericFilters(sp),
         sort,
         page,
       })

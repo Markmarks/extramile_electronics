@@ -1,10 +1,14 @@
 import { Logo } from '@extramile/ui';
 import {
+  BarChart3,
   Boxes,
   KeyRound,
   LayoutDashboard,
   Lock,
   MessageSquare,
+  ScrollText,
+  Settings as SettingsIcon,
+  Store,
   TicketPercent,
   Truck,
   UserRound,
@@ -27,7 +31,11 @@ import { Reviews } from './Reviews';
 import { Dashboard } from './Dashboard';
 import { Inventory } from './Inventory';
 import { Orders } from './Orders';
+import { AuditLog } from './AuditLog';
+import { Reports } from './Reports';
+import { Settings } from './Settings';
 import { Users } from './Users';
+import { WalkIn } from './WalkIn';
 
 export type View =
   | 'home'
@@ -38,7 +46,11 @@ export type View =
   | 'coupons'
   | 'reviews'
   | 'customers'
-  | 'users';
+  | 'users'
+  | 'walkin'
+  | 'reports'
+  | 'audit'
+  | 'settings';
 
 export function Shell() {
   const { user, role: authRole, lock } = useAuth();
@@ -50,13 +62,17 @@ export function Shell() {
   const nav: { id: View; label: string; icon: LucideIcon }[] = [
     { id: 'home', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
+    { id: 'walkin', label: 'Walk-in sale', icon: Store },
     { id: 'catalogue', label: 'Catalogue', icon: Package },
     { id: 'inventory', label: 'Inventory', icon: Boxes },
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'customers', label: 'Customers', icon: UserRound },
     { id: 'reviews', label: 'Reviews', icon: MessageSquare },
     { id: 'coupons', label: 'Coupons', icon: TicketPercent },
     { id: 'delivery', label: 'Delivery', icon: Truck },
+    { id: 'audit', label: 'Audit log', icon: ScrollText },
     ...(role === 'admin' ? [{ id: 'users' as const, label: 'Users', icon: UsersIcon }] : []),
+    { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
   const email = user?.email ?? (isPreview ? 'preview@extramile.local' : '');
 
@@ -139,6 +155,10 @@ export function Shell() {
           {view === 'coupons' && <Coupons isAdmin={role === 'admin'} />}
           {view === 'delivery' && <Delivery isAdmin={role === 'admin'} />}
           {view === 'users' && role === 'admin' && <Users />}
+          {view === 'walkin' && <WalkIn />}
+          {view === 'reports' && <Reports />}
+          {view === 'audit' && <AuditLog />}
+          {view === 'settings' && <Settings />}
         </main>
       </div>
 

@@ -15,6 +15,7 @@ use std::sync::Mutex;
 use tauri::Manager;
 use uuid::Uuid;
 
+mod exports;
 mod offline;
 mod printing;
 
@@ -25,14 +26,26 @@ fn entry(key: &str) -> Result<Entry, String> {
 }
 
 // ── generic secrets (Windows Credential Manager) ─────────────────────────────
+// The webview may store its own values here, but never touch the entries the Rust side
+// owns: reading pin_vault would hand the sealed token to offline PIN guessing, and
+// writing or clearing pin_fail would reset the wrong-PIN lockout (docs/08-SECURITY D-05).
+const RESERVED_KEYS: [&str; 3] = [VAULT_KEY, FAIL_KEY, "device_id"];
+
+fn generic_entry(key: &str) -> Result<Entry, String> {
+    if key.is_empty() || RESERVED_KEYS.contains(&key) {
+        return Err("secure_*: reserved key".into());
+    }
+    entry(key)
+}
+
 #[tauri::command]
 fn secure_set(key: String, value: String) -> Result<(), String> {
-    entry(&key)?.set_password(&value).map_err(|e| e.to_string())
+    generic_entry(&key)?.set_password(&value).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn secure_get(key: String) -> Result<Option<String>, String> {
-    match entry(&key)?.get_password() {
+    match generic_entry(&key)?.get_password() {
         Ok(v) => Ok(Some(v)),
         Err(KeyringError::NoEntry) => Ok(None),
         Err(e) => Err(e.to_string()),
@@ -41,7 +54,7 @@ fn secure_get(key: String) -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn secure_clear(key: String) -> Result<(), String> {
-    match entry(&key)?.delete_credential() {
+    match generic_entry(&key)?.delete_credential() {
         Ok(()) | Err(KeyringError::NoEntry) => Ok(()),
         Err(e) => Err(e.to_string()),
     }
@@ -249,8 +262,31 @@ pub fn run() {
             printing::list_printers,
             printing::print_receipt,
             printing::print_label,
-            printing::print_test
+            printing::print_packing_slip,
+            printing::print_warranty_card,
+            printing::print_test,
+            exports::write_export
         ])
         .run(tauri::generate_context!())
         .expect("error while running the ExtraMile back-office");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generic_secret_commands_cannot_touch_vault_or_lockout() {
+        for key in [VAULT_KEY, FAIL_KEY, "device_id", ""] {
+            assert!(generic_entry(key).is_err(), "should reserve: {key:?}");
+        }
+    }
+
+    #[test]
+    fn pin_format() {
+        assert!(valid_pin("012345"));
+        for bad in ["12345", "1234567", "12345a", "١٢٣٤٥٦", " 12345"] {
+            assert!(!valid_pin(bad), "should reject: {bad:?}");
+        }
+    }
 }

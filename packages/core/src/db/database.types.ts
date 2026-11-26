@@ -719,12 +719,43 @@ export interface Database {
         Update: { reason?: string | null };
         Relationships: [];
       };
+      consent_log: {
+        Row: {
+          id: number;
+          user_id: string;
+          kind: 'marketing_email';
+          granted: boolean;
+          source: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          kind: 'marketing_email';
+          granted: boolean;
+          source?: string;
+          created_at?: string;
+        };
+        Update: Record<never, never>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
       is_staff: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
+      };
+      set_marketing_consent: {
+        Args: { p_granted: boolean; p_source?: string };
+        Returns: boolean;
+      };
+      claim_guest_orders: {
+        Args: { p_user: string; p_email: string };
+        Returns: number;
+      };
+      detach_customer: {
+        Args: { p_user: string };
+        Returns: number;
       };
       create_order: {
         Args: {
@@ -777,6 +808,8 @@ export interface Database {
           p_sort?: string;
           p_limit?: number;
           p_offset?: number;
+          p_min_storage_gb?: number;
+          p_min_ram_gb?: number;
         };
         Returns: Database['public']['Tables']['products']['Row'][];
       };

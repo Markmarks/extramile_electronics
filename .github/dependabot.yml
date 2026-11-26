@@ -1,0 +1,30 @@
+# Weekly dependency PRs (docs/08-SECURITY.md §6, A-01/A-02). Security fixes open as soon
+# as an advisory lands, independent of this schedule.
+version: 2
+updates:
+  - package-ecosystem: npm # pnpm workspace: root lockfile covers apps/* and packages/*
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+      runtime-patches:
+        dependency-type: production
+        update-types: [patch]
+
+  - package-ecosystem: cargo
+    directory: /apps/desktop/src-tauri
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      rust-patches:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
