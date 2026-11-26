@@ -1,5 +1,6 @@
 import { invokeAdminAction } from './adminActions';
 import { outboxEnqueue } from './offline';
+import { salePayload, type SaleInput, type SaleResult } from './walkInSale';
 
 /**
  * Walk-in (counter) sales — docs/07 §4 and §7. The app sends only variant ids, quantities
@@ -10,56 +11,7 @@ import { outboxEnqueue } from './offline';
  * when the outbox replays it the server issues the real order number, recorded here so the
  * counter can reprint the receipt (docs/07 §7 "receipt is reprinted if the number changed").
  */
-export type PayMethod = 'cash' | 'momo';
-
-export interface SaleLine {
-  variantId: string;
-  sku: string;
-  title: string;
-  /** Shelf price at the time of the sale, for the on-screen total only (pesewas). */
-  price: number;
-  qty: number;
-  serials: string[];
-}
-
-export interface SaleInput {
-  lines: SaleLine[];
-  method: PayMethod;
-  customer: string;
-  phone: string;
-  email: string;
-}
-
-export type SaleResult =
-  | { kind: 'recorded'; orderId: string; orderNumber: string; total: number }
-  | { kind: 'queued'; localRef: string };
-
-export function saleTotal(lines: SaleLine[]): number {
-  return lines.reduce((n, l) => n + l.price * l.qty, 0);
-}
-
-/** One IMEI/serial per unit at most; blanks dropped, duplicates removed. */
-export function cleanSerials(raw: string, qty: number): string[] {
-  return [
-    ...new Set(
-      raw
-        .split(/[\s,;]+/)
-        .map((s) => s.trim())
-        .filter(Boolean),
-    ),
-  ].slice(0, qty);
-}
-
-export function salePayload(input: SaleInput, localRef: string): Record<string, unknown> {
-  return {
-    items: input.lines.map((l) => ({ variant_id: l.variantId, qty: l.qty, serials: l.serials })),
-    method: input.method,
-    customer: input.customer.trim() || null,
-    phone: input.phone.trim() || null,
-    email: input.email.trim() || null,
-    local_ref: localRef,
-  };
-}
+export * from './walkInSale';
 
 function localRef(): string {
   return `local-${globalThis.crypto.randomUUID().slice(0, 8).toUpperCase()}`;

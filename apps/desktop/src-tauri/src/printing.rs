@@ -1,10 +1,8 @@
 // ESC/POS receipt, packing slip, warranty card + label printing (docs/07-DESKTOP-ADMIN.md §6).
 //
 // The ESC/POS byte stream is built here in pure Rust (80mm, code page 437). Every job is
-// first written to a spool file under the app data dir (a reprintable copy), then — unless
-// the "Spool file" pseudo-printer is chosen in Settings — sent RAW to the Windows printer
-// through the print spooler (winspool). A failed print returns a typed error string for
-// the toast and never changes order state.
+// written to a spool file under the app data dir (a reprintable copy); a failed print
+// returns a typed error string for the toast and never changes order state.
 use serde::Deserialize;
 use std::io::Write;
 use tauri::{AppHandle, Manager};
@@ -117,125 +115,18 @@ fn spool(app: &AppHandle, name: &str, bytes: &[u8]) -> Result<String, String> {
     Ok(path.to_string_lossy().into_owned())
 }
 
-/// Spool a copy, then send to the chosen printer. Returns where the job went.
+/// Write the job to the spool file. Sending RAW bytes straight to a Windows printer needs
+/// raw FFI calls into the winspool API, which the blocking Semgrep check rejects; that path is
+/// held back until a vetted safe wrapper or a reviewed exception is chosen. Until then only
+/// the spool-file pseudo-printer exists, and any other name is refused with a clear message.
 fn dispatch(app: &AppHandle, printer: &str, name: &str, bytes: &[u8]) -> Result<String, String> {
+    if !printer.is_empty() && printer != SPOOL_PRINTER {
+        return Err(format!(
+            "printer \"{printer}\" is not available yet — choose \"{SPOOL_PRINTER}\" in Settings"
+        ));
+    }
     let path = spool(app, name, bytes)?;
-    if printer.is_empty() || printer == SPOOL_PRINTER {
-        return Ok(format!("saved to {path}"));
-    }
-    if !installed_printers().iter().any(|p| p == printer) {
-        return Err(format!("printer \"{printer}\" not found — choose one in Settings"));
-    }
-    send_raw(printer, name, bytes)?;
-    Ok(format!("sent to {printer}"))
-}
-
-// ── Windows spooler (RAW) ───────────────────────────────────────────────────
-#[cfg(windows)]
-fn wide(s: &str) -> Vec<u16> {
-    s.encode_utf16().chain(std::iter::once(0)).collect()
-}
-
-#[cfg(windows)]
-fn installed_printers() -> Vec<String> {
-    use windows_sys::Win32::Graphics::Printing::{
-        EnumPrintersW, PRINTER_ENUM_CONNECTIONS, PRINTER_ENUM_LOCAL, PRINTER_INFO_4W,
-    };
-    let flags = PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS;
-    let (mut needed, mut count) = (0u32, 0u32);
-    // SAFETY: first call only asks for the buffer size (null buffer, 0 bytes).
-    unsafe {
-        EnumPrintersW(flags, std::ptr::null(), 4, std::ptr::null_mut(), 0, &mut needed, &mut count)
-    };
-    if needed == 0 {
-        return Vec::new();
-    }
-    // u64-backed buffer so the PRINTER_INFO_4W array is suitably aligned.
-    let mut buf = vec![0u64; (needed as usize).div_ceil(8)];
-    // SAFETY: buf is at least `needed` bytes; the API fills `count` PRINTER_INFO_4W structs
-    // whose string pointers point into the same buffer, which outlives the reads below.
-    let ok = unsafe {
-        EnumPrintersW(
-            flags,
-            std::ptr::null(),
-            4,
-            buf.as_mut_ptr() as *mut u8,
-            needed,
-            &mut needed,
-            &mut count,
-        )
-    };
-    if ok == 0 {
-        return Vec::new();
-    }
-    let infos = buf.as_ptr() as *const PRINTER_INFO_4W;
-    (0..count as usize)
-        .filter_map(|i| {
-            // SAFETY: i < count, within the array the API wrote.
-            let p = unsafe { (*infos.add(i)).pPrinterName };
-            if p.is_null() {
-                return None;
-            }
-            // SAFETY: pPrinterName is a NUL-terminated UTF-16 string inside `buf`.
-            let len = (0..).take_while(|&j| unsafe { *p.add(j) } != 0).count();
-            let slice = unsafe { std::slice::from_raw_parts(p, len) };
-            Some(String::from_utf16_lossy(slice))
-        })
-        .collect()
-}
-
-#[cfg(windows)]
-fn send_raw(printer: &str, job: &str, bytes: &[u8]) -> Result<(), String> {
-    use windows_sys::Win32::Foundation::HANDLE;
-    use windows_sys::Win32::Graphics::Printing::{
-        ClosePrinter, EndDocPrinter, EndPagePrinter, OpenPrinterW, StartDocPrinterW,
-        StartPagePrinter, WritePrinter, DOC_INFO_1W,
-    };
-    let name = wide(printer);
-    let mut doc_name = wide(&format!("ExtraMile {}", safe_name(job)));
-    let mut datatype = wide("RAW");
-    let mut h: HANDLE = std::ptr::null_mut();
-    // SAFETY: `name` is NUL-terminated and lives for the call; h receives the handle.
-    if unsafe { OpenPrinterW(name.as_ptr(), &mut h, std::ptr::null()) } == 0 || h.is_null() {
-        return Err(format!("could not open printer \"{printer}\" (is it switched on?)"));
-    }
-    let info = DOC_INFO_1W {
-        pDocName: doc_name.as_mut_ptr(),
-        pOutputFile: std::ptr::null_mut(),
-        pDatatype: datatype.as_mut_ptr(),
-    };
-    // SAFETY: h is an open printer handle; the DOC_INFO_1W strings outlive these calls; the
-    // handle is closed on every path below.
-    let result = unsafe {
-        if StartDocPrinterW(h, 1, &info) == 0 {
-            Err("the printer refused the job".to_string())
-        } else {
-            let mut written = 0u32;
-            let ok = StartPagePrinter(h) != 0
-                && WritePrinter(h, bytes.as_ptr().cast(), bytes.len() as u32, &mut written) != 0
-                && written as usize == bytes.len();
-            EndPagePrinter(h);
-            EndDocPrinter(h);
-            if ok {
-                Ok(())
-            } else {
-                Err("printing failed part-way (out of paper or offline?) — reprint".to_string())
-            }
-        }
-    };
-    // SAFETY: h came from OpenPrinterW and is closed exactly once.
-    unsafe { ClosePrinter(h) };
-    result
-}
-
-#[cfg(not(windows))]
-fn installed_printers() -> Vec<String> {
-    Vec::new()
-}
-
-#[cfg(not(windows))]
-fn send_raw(_printer: &str, _job: &str, _bytes: &[u8]) -> Result<(), String> {
-    Err("direct printing is only available on Windows".to_string())
+    Ok(format!("saved to {path}"))
 }
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
@@ -388,9 +279,8 @@ fn label_bytes(sku: &str, name: &str, price_pesewas: i64, copies: u8) -> Vec<u8>
 // ── commands ─────────────────────────────────────────────────────────────────
 #[tauri::command]
 pub fn list_printers() -> Vec<String> {
-    let mut all = vec![SPOOL_PRINTER.to_string()];
-    all.extend(installed_printers());
-    all
+    // Windows printer discovery arrives with direct printing (see dispatch()).
+    vec![SPOOL_PRINTER.to_string()]
 }
 
 #[tauri::command]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanSerials, salePayload, saleTotal, type SaleInput } from './walkIn';
+import { cleanSerials, salePayload, saleTotal, type SaleInput } from './walkInSale';
 
 const input: SaleInput = {
   lines: [

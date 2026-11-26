@@ -59,8 +59,8 @@ export function Settings() {
           label="Receipt & label printer"
           hint={
             isTauri
-              ? 'Printers installed in Windows. “Spool file” only saves the ESC/POS file (for testing).'
-              : 'Printer discovery works in the desktop app only.'
+              ? 'Jobs are saved as ESC/POS spool files for now; sending straight to a Windows printer is coming in a later release.'
+              : 'Printing works in the desktop app only.'
           }
         >
           <div className="flex gap-2">

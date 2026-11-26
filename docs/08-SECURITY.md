@@ -113,7 +113,7 @@ means adding a row: what it accepts, and why a hostile script calling it can't d
 | `outbox_pending` | — | Reads the local queue. |
 | `outbox_mark` | id, ok, error | Local bookkeeping; the server dedupes on the idempotency key. |
 | `list_printers` | — | Printer names only. |
-| `print_receipt` | receipt DTO, printer | Typed DTO rendered by us; control characters stripped so text can't inject ESC/POS commands; spool file name reduced to `[A-Za-z0-9_-]` (D-10). Printer must be one Windows lists. |
+| `print_receipt` | receipt DTO, printer | Typed DTO rendered by us; control characters stripped so text can't inject ESC/POS commands; spool file name reduced to `[A-Za-z0-9_-]` (D-10). Only the spool-file printer is accepted for now. |
 | `print_packing_slip` | slip DTO, printer | As `print_receipt`. |
 | `print_warranty_card` | warranty DTO, printer | As `print_receipt`. |
 | `print_label` | label fields, printer | As `print_receipt`; copies clamped to 1–20, barcode data to printable ASCII. |

@@ -28,9 +28,6 @@ argon2 = "0.5"
 rand = "0.8"
 base64 = "0.22"
 
-[target.'cfg(windows)'.dependencies]
-# Raw ESC/POS printing through the Windows print spooler (src/printing.rs).
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Graphics_Printing"] }
 
 [profile.release]
 panic = "abort"

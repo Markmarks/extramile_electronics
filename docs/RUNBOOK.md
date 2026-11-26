@@ -54,10 +54,10 @@ Operational playbook for ExtraMile Electronics. P0 = payment/auth incidents.
 
 ## Desktop: printer down (D-09)
 - Print failures surface as a typed toast and **never change order state**; reprint from the
-  order detail once the printer is back. Check the printer selection in Settings; run
-  `print_test`. Every job is also written to `%APPDATA%\<app>\prints\*.escpos.bin`, then sent
-  RAW to the chosen Windows printer through the spooler — verify the spool file if raw output
-  looks wrong. Choosing "Spool file (default)" only writes the file.
+  order detail once the printer is back. Run `print_test` from Settings. Every job is written
+  to `%APPDATA%\<app>\prints\*.escpos.bin`. Sending straight to a Windows printer is not wired
+  yet: it needs winspool FFI (`unsafe`), which the blocking Semgrep rule rejects — choose a
+  vetted safe wrapper crate or a reviewed exception first.
 
 ## Deploying the 2026-11-26 feature batch (branch `claude/feature-gaps`)
 Done by a person, from the repo, after review:
@@ -73,8 +73,7 @@ Done by a person, from the repo, after review:
 4. Have the legal pages (`/privacy`, `/terms`, `/returns`, `/warranty`) reviewed; the policy
    numbers (7-day return window) are drafts in `apps/web/src/lib/site.ts`.
 5. Build a new back-office release (new Rust commands: packing slip, warranty card,
-   `write_export`, Windows printer discovery) and try a real receipt + label on the counter
-   printer (docs/07 §11 tests D-09 to D-11).
+   `write_export`) and check a receipt + label spool file on the counter PC (docs/07 §11 tests D-09 to D-11).
 
 ## Desktop: extended outage with a full outbox
 - Writes queue locally (`outbox`) and replay in order per order id on reconnect; the server
