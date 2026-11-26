@@ -55,7 +55,26 @@ Operational playbook for ExtraMile Electronics. P0 = payment/auth incidents.
 ## Desktop: printer down (D-09)
 - Print failures surface as a typed toast and **never change order state**; reprint from the
   order detail once the printer is back. Check the printer selection in Settings; run
-  `print_test`. Receipts are ESC/POS spooled — verify the spool file if raw output looks wrong.
+  `print_test`. Every job is also written to `%APPDATA%\<app>\prints\*.escpos.bin`, then sent
+  RAW to the chosen Windows printer through the spooler — verify the spool file if raw output
+  looks wrong. Choosing "Spool file (default)" only writes the file.
+
+## Deploying the 2026-11-26 feature batch (branch `claude/feature-gaps`)
+Done by a person, from the repo, after review:
+1. `supabase db push` — migrations `20261126000001` (search storage/RAM filters),
+   `…02` (consent log, guest-order claim, account deletion helpers), `…03` (receive stock,
+   staff audit-log read, walk-in sales). Until `…01` is applied, the storefront's storage/RAM
+   filters return no results; price filters already work.
+2. `supabase functions deploy admin-actions` — adds `stock_receive` and `walk_in_sale`, and
+   stops refunds of counter-paid (`manual`) orders from calling Paystack.
+3. Optional Vercel env vars for the footer / contact page: `NEXT_PUBLIC_SUPPORT_EMAIL`,
+   `NEXT_PUBLIC_SUPPORT_PHONE`, `NEXT_PUBLIC_SUPPORT_WHATSAPP`, `NEXT_PUBLIC_STORE_ADDRESS`,
+   `NEXT_PUBLIC_STORE_HOURS`. Unset ones are simply hidden.
+4. Have the legal pages (`/privacy`, `/terms`, `/returns`, `/warranty`) reviewed; the policy
+   numbers (7-day return window) are drafts in `apps/web/src/lib/site.ts`.
+5. Build a new back-office release (new Rust commands: packing slip, warranty card,
+   `write_export`, Windows printer discovery) and try a real receipt + label on the counter
+   printer (docs/07 §11 tests D-09 to D-11).
 
 ## Desktop: extended outage with a full outbox
 - Writes queue locally (`outbox`) and replay in order per order id on reconnect; the server
